@@ -190,6 +190,7 @@ Efeitos sonoros **não** ficam na cena (são disparos pontuais): o host envia um
 - **Encerrar:** pode tocar a vinheta/mídia "finalizar", depois para o egress e finaliza o broadcast no YouTube. Pedir confirmação antes.
 - O `/stage` usa o `EgressHelper` do `@livekit/egress-sdk` e chama `startRecording()` só quando a cena estiver carregada.
 - Durante o desenvolvimento, testar sempre com transmissões **não listadas**.
+- Implementação (Etapa 6): `POST /api/live/{iniciar|intervalo|retomar|encerrar}` (só host). Iniciar: busca o RTMP no YouTube (`enderecoRtmp`, nunca salvo), `startRoomCompositeEgress` com `customBaseUrl = APP_BASE_URL/stage` em `H264_1080P_30`, espera `streamStatus = active` (até ~75 s) e faz `transition → live`; se falhar, **para o Egress** (custo). Intervalo/Retomar só mudam `cena.status` (o `/stage` mostra "Já voltamos" e `AudioPalco` silencia todos). Encerrar: para o Egress e faz `transition → complete`. `status` e `noArDesde` da cena são **só do servidor** (`alterarCenaNoServidor`; `/api/cena` preserva esses campos). O `/stage` em modo Egress (`?url&token`) chama `EgressHelper.setRoom` + `startRecording` ao conectar e nunca mostra botões.
 
 ### 8.3 Layouts ("Disposições")
 Um layout é um JSON com **slots em porcentagem** do canvas, o que facilita criar e editar:

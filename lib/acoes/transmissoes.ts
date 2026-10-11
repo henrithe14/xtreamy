@@ -6,6 +6,7 @@ import { accessTokenDoDestino } from "@/lib/destinos";
 import { criarClienteServidor } from "@/lib/supabase/servidor";
 import { gerarCodigoConvite, LIMITES, PRIVACIDADES } from "@/lib/transmissoes";
 import { apagarLive, criarLive, ErroYouTube } from "@/lib/youtube";
+import { lerAgendamento } from "@/lib/validacao";
 import type { Privacidade } from "@/lib/supabase/tipos";
 
 export type EstadoNovaTransmissao =
@@ -83,16 +84,6 @@ export async function criarTransmissao(
 
   refresh();
   return { tipo: "criada", id: data.id };
-}
-
-/** Vazio = sem agendamento; senão uma data ISO entre agora e 1 ano. */
-function lerAgendamento(bruto: string): string | null | "invalido" {
-  if (!bruto) return null;
-  const data = new Date(bruto);
-  const agora = Date.now();
-  if (Number.isNaN(data.getTime())) return "invalido";
-  if (data.getTime() < agora + 60_000 || data.getTime() > agora + 365 * 24 * 3600_000) return "invalido";
-  return data.toISOString();
 }
 
 /** Status em que a live nunca foi ao ar: apagar no YouTube não perde vídeo nenhum. */

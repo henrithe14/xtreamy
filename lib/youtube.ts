@@ -29,6 +29,9 @@ const MENSAGENS: Record<string, string> = {
     "Este canal ainda não pode fazer transmissões ao vivo. Ative em youtube.com/features (a liberação pode levar até 24 horas).",
   insufficientLivePermissions: "A conta conectada não tem permissão para transmitir neste canal.",
   quotaExceeded: "O limite diário de uso da API do YouTube acabou. Tente de novo amanhã.",
+  redundantTransition: "A live já está nesse estado no YouTube.",
+  invalidTransition: "O YouTube ainda não aceitou essa mudança. Aguarde alguns segundos e tente de novo.",
+  errorStreamInactive: "O YouTube ainda não está recebendo o vídeo. Aguarde alguns segundos e tente de novo.",
   invalid_grant: "A conexão com o YouTube expirou. Conecte o canal de novo em Destinos.",
   accessNotConfigured:
     "A YouTube Data API v3 não está ativada no projeto do Google Cloud. Ative em APIs e serviços → Biblioteca.",
@@ -192,4 +195,121 @@ export async function apagarLive(accessToken: string, broadcastId: string | null
 
 export function linkStudio(broadcastId: string) {
   return `https://studio.youtube.com/video/${broadcastId}/livestreaming`;
+}
+
+// ---------- Configurações da live ----------
+
+export type Categoria = { id: string; nome: string };
+
+/** Categorias que o YouTube aceita para vídeos no Brasil, com nomes em português. */
+export async function listarCategorias(accessToken: string): Promise<Categoria[]> {
+  const dados = await api<{ items?: { id: string; snippet: { title: string; assignable: boolean } }[] }>(
+    accessToken,
+    "/videoCategories?part=snippet&regionCode=BR&hl=pt_BR",
+  );
+  return (dados.items ?? [])
+    .filter((c) => c.snippet.assignable)
+    .map((c) => ({ id: c.id, nome: c.snippet.title }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+}
+
+/** Categoria "Pessoas e blogs": o YouTube exige alguma ao atualizar o vídeo. */
+export const CATEGORIA_PADRAO = "22";
+
+type ConfigLive = DadosLive & { categoriaId: string | null; tags: string[]; idioma: string };
+
+/**
+ * Atualiza a live: título, descrição, horário e privacidade ficam no broadcast;
+ * categoria, tags e idioma ficam no vídeo da live (mesmo id).
+ */
+export async function atualizarLive(accessToken: string, broadcastId: string, c: ConfigLive) {
+  await api(accessToken, "/liveBroadcasts?part=snippet,status", {
+    method: "PUT",
+    body: JSON.stringify({
+      id: broadcastId,
+      snippet: {
+        title: c.titulo.slice(0, 100),
+        description: c.descricao.slice(0, 5000),
+        scheduledStartTime: c.inicioPrevisto.toISOString(),
+      },
+      status: { privacyStatus: PRIVACIDADE_YT[c.privacidade], selfDeclaredMadeForKids: false },
+    }),
+  });
+  await api(accessToken, "/videos?part=snippet", {
+    method: "PUT",
+    body: JSON.stringify({
+      id: broadcastId,
+      snippet: {
+        title: c.titulo.slice(0, 100),
+        description: c.descricao.slice(0, 5000),
+        categoryId: c.categoriaId ?? CATEGORIA_PADRAO,
+        tags: c.tags,
+        defaultLanguage: c.idioma,
+        defaultAudioLanguage: c.idioma,
+      },
+    }),
+  });
+}
+
+/** Troca a capa (miniatura) da live. Exige canal verificado por telefone. */
+export async function definirCapa(accessToken: string, broadcastId: string, imagem: Blob) {
+  const resposta = await fetch(
+    `https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${broadcastId}&uploadType=media`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": imagem.type },
+      body: imagem,
+      cache: "no-store",
+    },
+  );
+  if (!resposta.ok) {
+    const erro = await lerErro(resposta);
+    if (resposta.status === 403 && erro.motivo !== "quotaExceeded") {
+      throw new ErroYouTube(
+        "capa_nao_permitida",
+        "O YouTube não deixou trocar a capa. Verifique o canal por telefone em youtube.com/verify e tente de novo.",
+      );
+    }
+    throw erro;
+  }
+}
+
+// ---------- Transmitir (Etapa 6) ----------
+
+/**
+ * Endereço RTMP completo (servidor + chave) do stream ligado à live. Só no servidor:
+ * a chave nunca é salva nem enviada ao navegador.
+ */
+export async function enderecoRtmp(accessToken: string, streamId: string): Promise<string> {
+  const dados = await api<{ items?: { cdn: { ingestionInfo: { ingestionAddress: string; streamName: string } } }[] }>(
+    accessToken,
+    `/liveStreams?part=cdn&id=${streamId}`,
+  );
+  const info = dados.items?.[0]?.cdn.ingestionInfo;
+  if (!info) throw new ErroYouTube("sem_stream", "O ponto de entrada da live não existe mais no YouTube.");
+  return `${info.ingestionAddress}/${info.streamName}`;
+}
+
+/** "active" quando o YouTube já está recebendo o vídeo. */
+export async function statusStream(accessToken: string, streamId: string): Promise<string> {
+  const dados = await api<{ items?: { status: { streamStatus: string } }[] }>(
+    accessToken,
+    `/liveStreams?part=status&id=${streamId}`,
+  );
+  return dados.items?.[0]?.status.streamStatus ?? "inexistente";
+}
+
+export async function statusLive(accessToken: string, broadcastId: string) {
+  const dados = await api<{
+    items?: { status: { lifeCycleStatus: string }; snippet: { actualStartTime?: string } }[];
+  }>(accessToken, `/liveBroadcasts?part=status,snippet&id=${broadcastId}`);
+  const item = dados.items?.[0];
+  return { ciclo: item?.status.lifeCycleStatus ?? "inexistente", inicioReal: item?.snippet.actualStartTime ?? null };
+}
+
+/** Muda o estado da live no YouTube: "live" (no ar) ou "complete" (encerrada). */
+export async function transicionar(accessToken: string, broadcastId: string, para: "live" | "complete") {
+  await api(accessToken, `/liveBroadcasts/transition?broadcastStatus=${para}&id=${broadcastId}&part=status`, {
+    method: "POST",
+  });
 }

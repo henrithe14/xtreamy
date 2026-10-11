@@ -57,7 +57,11 @@ export function Composicao({ cena, previa = false }: Props) {
         />
       ))}
 
-      {previa && palco.length === 0 && (
+      {(cena.status === "intervalo" || cena.status === "encerrada") && (
+        <TelaCheiaMarca cores={cena.cores} texto={cena.status === "intervalo" ? "Já voltamos" : "Transmissão encerrada"} />
+      )}
+
+      {previa && palco.length === 0 && cena.status !== "intervalo" && cena.status !== "encerrada" && (
         <p className="absolute inset-0 flex items-center justify-center text-[2.2cqw] text-texto-suave">
           Ninguém no palco. Escolha quem aparece em Pessoas.
         </p>
@@ -88,6 +92,18 @@ export function FundoMarca({ cores }: { cores: CoresMarca }) {
   );
 }
 
+/** Tela cheia sobre tudo (intervalo/encerrada): fundo da marca e um texto grande. */
+function TelaCheiaMarca({ cores, texto }: { cores: CoresMarca; texto: string }) {
+  return (
+    <div className="absolute inset-0 animate-[aparecer_300ms_ease-out] motion-reduce:animate-none">
+      <FundoMarca cores={cores} />
+      <p className="absolute inset-0 flex items-center justify-center text-[5cqw] font-semibold tracking-tight text-white">
+        {texto}
+      </p>
+    </div>
+  );
+}
+
 function SlotPessoa({ participante, slot, camera }: { participante: Participant; slot: Slot; camera?: TrackReference }) {
   const { name, metadata } = useParticipantInfo({ participant: participante });
   const { etiqueta } = lerMetadados(metadata);
@@ -115,11 +131,15 @@ function SlotPessoa({ participante, slot, camera }: { participante: Participant;
   );
 }
 
-/** Só no /stage: toca o microfone de quem está visível no palco, e de mais ninguém. */
+/**
+ * Só no /stage: toca o microfone de quem está visível no palco, e de mais ninguém.
+ * No intervalo e depois de encerrada, ninguém é ouvido na live.
+ */
 export function AudioPalco({ cena }: { cena: Cena }) {
   const palco = usePalcoVisivel(cena);
   const microfones = useTracks([Track.Source.Microphone]);
-  const visiveis = new Set(palco.map((p) => p.identity));
+  const silencio = cena.status === "intervalo" || cena.status === "encerrada";
+  const visiveis = new Set(silencio ? [] : palco.map((p) => p.identity));
   return (
     <>
       {microfones

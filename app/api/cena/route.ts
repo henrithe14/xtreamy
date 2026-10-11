@@ -1,6 +1,6 @@
 import { resolverAcesso } from "@/lib/acesso";
 import { validarCena } from "@/lib/cena";
-import { gravarCenaNaSala } from "@/lib/livekit";
+import { gravarCenaNaSala, lerCenaDaSala } from "@/lib/livekit";
 
 /** O diretor altera a cena; o servidor valida e grava nos metadata da sala. */
 export async function POST(request: Request) {
@@ -19,7 +19,9 @@ export async function POST(request: Request) {
   if (!cena) return Response.json({ erro: "Cena inválida." }, { status: 400 });
 
   try {
-    await gravarCenaNaSala(transmissaoId, cena);
+    // Status e horário no ar são do servidor (Iniciar/Intervalo/Encerrar): nunca do navegador.
+    const atual = await lerCenaDaSala(transmissaoId);
+    await gravarCenaNaSala(transmissaoId, { ...cena, status: atual.status, noArDesde: atual.noArDesde });
     return Response.json({ ok: true });
   } catch {
     return Response.json({ erro: "A sala não respondeu. Tente de novo." }, { status: 502 });

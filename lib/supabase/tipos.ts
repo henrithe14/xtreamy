@@ -14,6 +14,9 @@ type LinhaTransmissao = {
   codigo_convite: string;
   youtube_broadcast_id: string | null;
   youtube_stream_id: string | null;
+  categoria_id: string | null;
+  tags: string[];
+  idioma: string;
   live_chat_id: string | null;
   egress_id: string | null;
   /** ISO; nulo = sem agendamento. */

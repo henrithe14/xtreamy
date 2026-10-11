@@ -108,6 +108,12 @@
   letter-spacing: -0.01em;
 }
 
+@keyframes aparecer {
+  from {
+    opacity: 0;
+  }
+}
+
 @keyframes tally-pulso {
   50% {
     opacity: 0.45;

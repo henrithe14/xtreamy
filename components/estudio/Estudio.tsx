@@ -18,6 +18,7 @@ type Props = {
   titulo: string;
   papel: PapelSala;
   urlConvite?: string;
+  temCanal: boolean;
 };
 
 type Conexao = { estado: "buscando" } | { estado: "pronta"; token: string } | { estado: "erro"; mensagem: string };

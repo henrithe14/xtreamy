@@ -29,6 +29,8 @@ import { BotaoConvidar } from "@/components/estudio/BotaoConvidar";
 import { PainelPessoas } from "@/components/estudio/PainelPessoas";
 import { Previa } from "@/components/estudio/Previa";
 import { SeletorLayout } from "@/components/estudio/SeletorLayout";
+import { ControlesLive, Cronometro } from "@/components/estudio/ControlesLive";
+import { StatusTally } from "@/components/ui/StatusTally";
 
 type Props = {
   transmissaoId: string;
@@ -37,6 +39,8 @@ type Props = {
   urlConvite?: string;
   /** Diretor que só controla: não publica câmera. */
   soDiretor: boolean;
+  /** A transmissão tem live criada no YouTube (pode iniciar). */
+  temCanal: boolean;
   falhaAparelho?: MediaDeviceFailure;
   aoFecharAvisoAparelho: () => void;
   aoSair: () => void;
@@ -48,6 +52,7 @@ export function Sala({
   papel,
   urlConvite,
   soDiretor,
+  temCanal,
   falhaAparelho,
   aoFecharAvisoAparelho,
   aoSair,
@@ -56,7 +61,7 @@ export function Sala({
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <BarraSuperior titulo={titulo} papel={papel} soDiretor={soDiretor} />
+      <BarraSuperior titulo={titulo} papel={papel} soDiretor={soDiretor} transmissaoId={transmissaoId} temCanal={temCanal} />
       <AvisoSom />
       {falhaAparelho && <AvisoAparelho falha={falhaAparelho} aoFechar={aoFecharAvisoAparelho} />}
 
@@ -132,19 +137,31 @@ function EstadoNoPalco({ cena }: { cena: Cena }) {
   );
 }
 
-function BarraSuperior({ titulo, papel, soDiretor }: { titulo: string; papel: PapelSala; soDiretor: boolean }) {
+type PropsBarra = { titulo: string; papel: PapelSala; soDiretor: boolean; transmissaoId: string; temCanal: boolean };
+
+function BarraSuperior({ titulo, papel, soDiretor, transmissaoId, temCanal }: PropsBarra) {
+  const cena = useCena();
   const estado = useConnectionState();
   const reconectando = estado === ConnectionState.Reconnecting || estado === ConnectionState.SignalReconnecting;
 
   return (
-    <header className="sticky top-0 z-20 flex min-h-14 items-center gap-3 border-b border-vidro-borda bg-fundo/60 px-3 backdrop-blur-xl sm:px-6 deitado:min-h-10">
-      <SimboloMarca className="size-7 shrink-0" />
+    <header className="sticky top-0 z-20 flex min-h-14 flex-wrap items-center gap-x-3 gap-y-2 border-b border-vidro-borda bg-fundo/60 px-3 py-2 backdrop-blur-xl sm:px-6 deitado:min-h-10 deitado:py-1">
+      <SimboloMarca aoVivo={cena.status === "ao_vivo"} className="size-7 shrink-0" />
       <div className="min-w-0 flex-1">
         <h1 className="truncate font-semibold">{titulo}</h1>
         <p className="text-xs text-texto-suave">
           {papel === "convidado" ? "Convidado" : soDiretor ? "Só diretor: você não aparece na live" : "Diretor e apresentador"}
         </p>
       </div>
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <StatusTally status={cena.status} />
+        {cena.status === "ao_vivo" && cena.noArDesde && (
+          <span className="text-no-ar">
+            <Cronometro desde={cena.noArDesde} />
+          </span>
+        )}
+      </div>
+      {papel === "host" && <ControlesLive transmissaoId={transmissaoId} cena={cena} temCanal={temCanal} />}
       {reconectando && (
         <p role="status" className="flex items-center gap-2 rounded-full bg-ensaio/15 px-3 py-1 text-sm font-semibold text-ensaio">
           <span className="tally-pulso size-2 rounded-full bg-ensaio" aria-hidden />

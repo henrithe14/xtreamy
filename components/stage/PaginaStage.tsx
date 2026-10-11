@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { LiveKitRoom, useAudioPlayback, useRoomContext } from "@livekit/components-react";
-import type { RoomOptions } from "livekit-client";
+import { LiveKitRoom, useAudioPlayback, useConnectionState, useRoomContext } from "@livekit/components-react";
+import EgressHelper from "@livekit/egress-sdk";
+import { ConnectionState, type RoomOptions } from "livekit-client";
 import { useCena } from "@/hooks/useCena";
 import { AudioPalco, Composicao } from "@/components/stage/Composicao";
 
@@ -47,6 +48,7 @@ export function PaginaStage() {
   }, [urlEgress, tokenEgress, transmissaoId]);
 
   // A saída quer sempre a melhor qualidade de quem está no palco.
+  const modoEgress = Boolean(urlEgress && tokenEgress);
   const opcoes = useMemo<RoomOptions>(() => ({ adaptiveStream: false, dynacast: false }), []);
 
   if (!conexao) return <Tela>Conectando…</Tela>;
@@ -54,13 +56,25 @@ export function PaginaStage() {
 
   return (
     <LiveKitRoom serverUrl={conexao.url} token={conexao.token} connect audio={false} video={false} options={opcoes}>
-      <Saida />
+      <Saida egress={modoEgress} />
     </LiveKitRoom>
   );
 }
 
-function Saida() {
+function Saida({ egress }: { egress: boolean }) {
   const cena = useCena();
+  const room = useRoomContext();
+  const conexao = useConnectionState();
+
+  // No Egress: avisa que a página está pronta para gravar, já conectada e com a cena
+  // carregada (um instante para os vídeos aparecerem e não começar com tela vazia).
+  useEffect(() => {
+    if (!egress || conexao !== ConnectionState.Connected) return;
+    EgressHelper.setRoom(room);
+    const t = window.setTimeout(() => EgressHelper.startRecording(), 1500);
+    return () => window.clearTimeout(t);
+  }, [egress, conexao, room]);
+
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black">
       {/* Ocupa a tela inteira em 1920×1080 (Egress) e encaixa em 16:9 numa aba comum. */}
@@ -68,7 +82,8 @@ function Saida() {
         <Composicao cena={cena} />
       </div>
       <AudioPalco cena={cena} />
-      <LiberarSom />
+      {/* Nunca mostrar botão na imagem que vai ao ar. */}
+      {!egress && <LiberarSom />}
     </div>
   );
 }

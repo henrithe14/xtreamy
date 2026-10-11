@@ -1,7 +1,14 @@
 import "server-only";
-import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
+import {
+  AccessToken,
+  EgressClient,
+  EncodingOptionsPreset,
+  RoomServiceClient,
+  StreamOutput,
+  StreamProtocol,
+} from "livekit-server-sdk";
 import { nomeSala, type MetadadosParticipante } from "@/lib/participante";
-import type { Cena } from "@/lib/cena";
+import { lerCena, type Cena } from "@/lib/cena";
 
 function lerEnvLivekit() {
   const url = process.env.LIVEKIT_URL;
@@ -72,6 +79,44 @@ export async function criarTokenStage(transmissaoId: string) {
 
 export async function gravarCenaNaSala(transmissaoId: string, cena: Cena) {
   await clienteSala().updateRoomMetadata(nomeSala(transmissaoId), JSON.stringify(cena));
+}
+
+/** Cena atual da sala (lida dos metadata no servidor). */
+export async function lerCenaDaSala(transmissaoId: string): Promise<Cena> {
+  const [sala] = await clienteSala().listRooms([nomeSala(transmissaoId)]);
+  return lerCena(sala?.metadata);
+}
+
+/** Muda só campos controlados pelo servidor (status, horário no ar), preservando o resto. */
+export async function alterarCenaNoServidor(transmissaoId: string, mudanca: (c: Cena) => Partial<Cena>) {
+  const atual = await lerCenaDaSala(transmissaoId);
+  await gravarCenaNaSala(transmissaoId, { ...atual, ...mudanca(atual), versao: atual.versao + 1 });
+}
+
+function clienteEgress() {
+  const { url, apiKey, apiSecret } = lerEnvLivekit();
+  return new EgressClient(url, apiKey, apiSecret);
+}
+
+/**
+ * Liga o Egress: o LiveKit abre o /stage (nosso template) num Chrome na nuvem,
+ * captura em 1080p30 e envia por RTMP. Custa por minuto enquanto roda.
+ */
+export async function iniciarEgress(transmissaoId: string, rtmp: string): Promise<string> {
+  const base = (process.env.APP_BASE_URL ?? "").replace(/\/+$/, "");
+  if (!base.startsWith("https://")) {
+    throw new Error("APP_BASE_URL precisa ser o endereço público https (o Egress roda na nuvem).");
+  }
+  const info = await clienteEgress().startRoomCompositeEgress(
+    nomeSala(transmissaoId),
+    new StreamOutput({ protocol: StreamProtocol.RTMP, urls: [rtmp] }),
+    { customBaseUrl: `${base}/stage`, encodingOptions: EncodingOptionsPreset.H264_1080P_30 },
+  );
+  return info.egressId;
+}
+
+export async function pararEgress(egressId: string) {
+  await clienteEgress().stopEgress(egressId);
 }
 
 export async function removerDaSala(transmissaoId: string, identity: string) {

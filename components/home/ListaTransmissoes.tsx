@@ -7,6 +7,7 @@ import { listarTransmissoes, urlConvite, type Transmissao } from "@/lib/transmis
 import { StatusTally } from "@/components/ui/StatusTally";
 import { BotaoCopiarConvite } from "@/components/home/BotaoCopiarConvite";
 import { BotaoExcluir } from "@/components/home/BotaoExcluir";
+import { ConfigurarLive } from "@/components/home/ConfigurarLive";
 
 const PRIVACIDADE: Record<Transmissao["privacidade"], string> = {
   nao_listada: "Não listada",
@@ -96,6 +97,7 @@ export async function ListaTransmissoes() {
               <ArrowSquareIn weight="fill" aria-hidden />
               Entrar no estúdio
             </Link>
+            {t.youtube_broadcast_id && <ConfigurarLive live={t} />}
             <BotaoCopiarConvite url={urlConvite(t)} />
             <BotaoExcluir id={t.id} titulo={t.titulo} temLiveNoYoutube={Boolean(t.youtube_broadcast_id)} />
           </div>

@@ -18,6 +18,8 @@ export type Cena = {
   /** Identities, na ordem dos slots. */
   noPalco: string[];
   status: StatusCena;
+  /** Quando a live entrou no ar (ms desde 1970). Só o servidor define. */
+  noArDesde: number | null;
   cores: CoresMarca;
 };
 
@@ -26,6 +28,7 @@ export const CENA_INICIAL: Cena = {
   layoutId: LAYOUT_PADRAO,
   noPalco: [],
   status: "ensaio",
+  noArDesde: null,
   cores: CORES_PADRAO,
 };
 
@@ -56,7 +59,8 @@ export function validarCena(dado: unknown): Cena | null {
   if (typeof c.status !== "string" || !STATUS.includes(c.status)) return null;
   const cores = validarCores(c.cores);
   if (!cores) return null;
-  return { versao: c.versao, layoutId: c.layoutId, noPalco: c.noPalco, status: c.status, cores };
+  const noArDesde = typeof c.noArDesde === "number" && Number.isFinite(c.noArDesde) ? c.noArDesde : null;
+  return { versao: c.versao, layoutId: c.layoutId, noPalco: c.noPalco, status: c.status, noArDesde, cores };
 }
 
 export function lerCena(metadata: string | undefined): Cena {
