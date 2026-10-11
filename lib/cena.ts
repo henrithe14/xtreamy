@@ -3,6 +3,7 @@
 // Campos de artes, mídias, widgets etc. entram nas etapas correspondentes.
 
 import { LAYOUTS, LAYOUT_PADRAO } from "@/lib/layouts";
+import { ESTILO_PADRAO, validarBanner, validarEstilo, type Banner, type Estilo } from "@/lib/estilo";
 
 export type StatusCena = "ensaio" | "ao_vivo" | "intervalo" | "encerrada";
 
@@ -33,6 +34,10 @@ export type Cena = {
   noArDesde: number | null;
   cores: CoresMarca;
   comentarioDestacado: ComentarioDestacado | null;
+  estilo: Estilo;
+  /** Identities cuja etiqueta (nome) não aparece na live. */
+  etiquetasOcultas: string[];
+  banner: Banner | null;
 };
 
 export const CENA_INICIAL: Cena = {
@@ -43,6 +48,9 @@ export const CENA_INICIAL: Cena = {
   noArDesde: null,
   cores: CORES_PADRAO,
   comentarioDestacado: null,
+  estilo: ESTILO_PADRAO,
+  etiquetasOcultas: [],
+  banner: null,
 };
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -89,6 +97,13 @@ export function validarCena(dado: unknown): Cena | null {
   const noArDesde = typeof c.noArDesde === "number" && Number.isFinite(c.noArDesde) ? c.noArDesde : null;
   const comentarioDestacado = validarComentario(c.comentarioDestacado);
   if (comentarioDestacado === "invalido") return null;
+  const estilo = validarEstilo(c.estilo);
+  if (!estilo) return null;
+  const banner = validarBanner(c.banner);
+  if (banner === "invalido") return null;
+  const etiquetasOcultas = c.etiquetasOcultas ?? [];
+  if (!Array.isArray(etiquetasOcultas) || etiquetasOcultas.length > 20) return null;
+  if (!etiquetasOcultas.every((id) => typeof id === "string" && id.length <= 64)) return null;
   return {
     versao: c.versao,
     layoutId: c.layoutId,
@@ -97,6 +112,9 @@ export function validarCena(dado: unknown): Cena | null {
     noArDesde,
     cores,
     comentarioDestacado,
+    estilo,
+    etiquetasOcultas,
+    banner,
   };
 }
 

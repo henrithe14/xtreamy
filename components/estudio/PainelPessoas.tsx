@@ -11,7 +11,7 @@ import {
   type TrackReference,
 } from "@livekit/components-react";
 import { Track, type Participant } from "livekit-client";
-import { ArrowLineUp, Headset, MicrophoneSlash, SpeakerSimpleSlash, Star, UserMinus } from "@phosphor-icons/react";
+import { ArrowLineUp, Eye, EyeSlash, Headset, MicrophoneSlash, PencilSimple, SpeakerSimpleSlash, Star, UserMinus } from "@phosphor-icons/react";
 import { useMudoParaLive } from "@/hooks/useAudioPrivado";
 import type { ControlePonto } from "@/hooks/usePonto";
 import type { Cena } from "@/lib/cena";
@@ -25,6 +25,10 @@ export type ControlesPessoa = {
   alternarMudo: (identity: string, mudo: boolean) => void;
   mudoPendente: string | null;
   ponto: ControlePonto;
+  /** Identities com o nome escondido na live. */
+  etiquetasOcultas: string[];
+  alternarEtiqueta: (identity: string) => void;
+  editarEtiqueta: (identity: string, etiqueta: string) => Promise<void>;
 };
 
 type Props = {
@@ -157,6 +161,9 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
   const mudoParaLive = useMudoParaLive(participante);
   const { ponto } = controles;
   const pontoNestaPessoa = ponto.alvo === identity;
+  const etiquetaOculta = identity ? controles.etiquetasOcultas.includes(identity) : false;
+  const [editando, setEditando] = useState(false);
+  const [rascunho, setRascunho] = useState("");
 
   return (
     <li className="flex flex-col gap-2 rounded-lg bg-white/[0.03] p-2 ring-1 ring-white/[0.06]">
@@ -190,7 +197,32 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
             {local && <span className="font-normal text-texto-suave"> (você)</span>}
           </span>
         </p>
-        <p className="truncate text-xs text-texto-suave">
+        {editando && identity ? (
+          <form
+            className="mt-1 flex gap-1"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void controles.editarEtiqueta(identity, rascunho).then(() => setEditando(false));
+            }}
+          >
+            <label htmlFor={`etq-${identity}`} className="sr-only">
+              Etiqueta de {nome}
+            </label>
+            <input
+              id={`etq-${identity}`}
+              autoFocus
+              value={rascunho}
+              maxLength={40}
+              onChange={(e) => setRascunho(e.target.value)}
+              placeholder="Ex.: Comentarista"
+              className="min-h-8 min-w-0 flex-1 rounded border border-white/10 bg-black/30 px-2 text-xs focus:border-destaque focus:outline-none"
+            />
+            <button type="submit" className="rounded bg-destaque px-2 text-xs font-semibold text-destaque-texto">
+              OK
+            </button>
+          </form>
+        ) : (
+        <p className="flex items-center gap-1 truncate text-xs text-texto-suave">
           {foraDaLive
             ? "Não cabe no layout atual"
             : papel === "host"
@@ -198,7 +230,34 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
                 ? "Diretor, fora da live"
                 : "Diretor"
               : etiqueta || "Convidado"}
+          {identity && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setRascunho(etiqueta);
+                  setEditando(true);
+                }}
+                aria-label={`Editar etiqueta de ${nome}`}
+                title="Editar etiqueta"
+                className="rounded p-0.5 hover:bg-white/10 hover:text-texto"
+              >
+                <PencilSimple weight="fill" className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => controles.alternarEtiqueta(identity)}
+                aria-pressed={etiquetaOculta}
+                aria-label={etiquetaOculta ? `Mostrar o nome de ${nome} na live` : `Esconder o nome de ${nome} na live`}
+                title={etiquetaOculta ? "Nome escondido na live" : "Esconder o nome na live"}
+                className={`rounded p-0.5 hover:bg-white/10 ${etiquetaOculta ? "text-ensaio" : "hover:text-texto"}`}
+              >
+                {etiquetaOculta ? <EyeSlash weight="fill" className="size-3.5" /> : <Eye weight="fill" className="size-3.5" />}
+              </button>
+            </>
+          )}
         </p>
+        )}
       </div>
       <div className="flex items-center gap-1">
         <BotaoAcao

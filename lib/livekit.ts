@@ -124,11 +124,22 @@ export async function definirAtributos(transmissaoId: string, identity: string, 
   await clienteSala().updateParticipant(nomeSala(transmissaoId), identity, { attributes });
 }
 
-/** Troca o "só diretor" do host, preservando o resto do metadata (papel, etiqueta). */
-export async function definirSoDiretor(transmissaoId: string, identity: string, soDiretor: boolean) {
+/**
+ * Muda parte do metadata do participante (ex.: "só diretor", etiqueta), preservando o
+ * resto. O papel nunca muda por aqui.
+ */
+export async function atualizarMetadados(
+  transmissaoId: string,
+  identity: string,
+  parcial: Partial<Pick<MetadadosParticipante, "soDiretor" | "etiqueta">>,
+) {
   const sala = nomeSala(transmissaoId);
-  const atual = await clienteSala().getParticipant(sala, identity);
-  const metadados = { ...lerMetadados(atual.metadata), soDiretor };
+  const atual = lerMetadados((await clienteSala().getParticipant(sala, identity)).metadata);
+  const metadados: MetadadosParticipante = {
+    ...atual,
+    ...parcial,
+    soDiretor: atual.papel === "host" && (parcial.soDiretor ?? atual.soDiretor),
+  };
   await clienteSala().updateParticipant(sala, identity, { metadata: JSON.stringify(metadados) });
 }
 

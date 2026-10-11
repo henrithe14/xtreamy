@@ -108,6 +108,13 @@
   letter-spacing: -0.01em;
 }
 
+@keyframes letreiro {
+  to {
+    /* Anda metade da faixa (uma cópia do texto + o espaço): a segunda cópia assume sem emenda. */
+    transform: translateX(calc(-50% - 3cqw));
+  }
+}
+
 @keyframes entrar {
   from {
     opacity: 0;

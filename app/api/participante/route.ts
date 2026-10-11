@@ -1,14 +1,23 @@
 import { cookies } from "next/headers";
 import { resolverAcesso } from "@/lib/acesso";
-import { definirAtributos, definirSoDiretor } from "@/lib/livekit";
+import { atualizarMetadados, definirAtributos } from "@/lib/livekit";
+import { LIMITES_IDENTIDADE } from "@/lib/preferencias";
 import { ATRIBUTO_AUDIO_PRIVADO, ehPonto } from "@/lib/participante";
 
-type Pedido = { transmissaoId?: unknown; codigo?: unknown; alvo?: unknown; audioPrivado?: unknown; soDiretor?: unknown };
+type Pedido = {
+  transmissaoId?: unknown;
+  codigo?: unknown;
+  alvo?: unknown;
+  audioPrivado?: unknown;
+  soDiretor?: unknown;
+  etiqueta?: unknown;
+};
 
 /**
  * Muda o estado de um participante na sala:
  * - audioPrivado ("mudo para a live"): o diretor em qualquer pessoa; o convidado só em si mesmo.
  * - soDiretor: só o diretor, em si mesmo.
+ * - etiqueta (texto abaixo do nome na live): o diretor em qualquer pessoa; o convidado em si.
  * Quem pede é identificado pelo servidor (sessão do dono ou cookie do convidado).
  */
 export async function POST(request: Request) {
@@ -39,7 +48,10 @@ export async function POST(request: Request) {
     }
     if (typeof p.soDiretor === "boolean") {
       if (!souHost || alvo !== eu) return Response.json({ erro: "Só o diretor muda o próprio modo." }, { status: 403 });
-      await definirSoDiretor(transmissaoId, alvo, p.soDiretor);
+      await atualizarMetadados(transmissaoId, alvo, { soDiretor: p.soDiretor });
+    }
+    if (typeof p.etiqueta === "string") {
+      await atualizarMetadados(transmissaoId, alvo, { etiqueta: p.etiqueta.trim().slice(0, LIMITES_IDENTIDADE.etiqueta) });
     }
     return Response.json({ ok: true });
   } catch {

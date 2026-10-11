@@ -294,6 +294,7 @@ Convidados veem a mesma estrutura **sem** o menu lateral de produção, sem as d
    - *Tema* das etiquetas/banners/comentários: **bubble**, **minimal**, **classic**, **block**.
    - *Fontes* (lista curada do Google Fonts).
    - Salvar como estilo reutilizável.
+   - Implementação (Etapa 9): `cena.estilo` (`lib/estilo.ts`: tema `bolha|minimo|classico|bloco`, fonte da lista `FONTES` carregada do Google Fonts pela própria composição, câmera com borda em px do quadro 1080p e formato; o círculo vira um quadrado centrado calculado pela proporção do slot). Artes por tema em `components/stage/Artes.tsx` (etiqueta, banner, comentário). `cena.etiquetasOcultas` esconde o nome de alguém na live; editar a etiqueta muda o metadata pelo servidor (`/api/participante` com `etiqueta`). Banners: `cena.banner` (faixa/letreiro, até 200 caracteres); banners e estilos salvos nas tabelas `banners` e `estilos` (migração 20261011000004).
 8. **Widgets:**
    - *Enquetes:* pergunta + opções, votação pelo chat do YouTube (ex.: o espectador digita `1`, `2`…), resultado ao vivo na tela; abrir/fechar votação.
    - *QR Code:* gerado a partir de uma URL, com legenda e posição.
@@ -373,7 +374,8 @@ Etapas implementadas e publicadas, mas cujo critério de "Pronto" ainda não foi
 - **Etapa 6 (inteira):** Iniciar → live no YouTube igual à prévia (bastidor invisível e inaudível), Intervalo ("Já voltamos", sem som) e Retomar, **30 min estáveis**, Encerrar (gravação fica no canal). Pontos de atenção no primeiro teste: tempo até o YouTube reconhecer o sinal (hoje espera até ~75 s) e o custo do Egress por minuto.
 - **Etapa 7 (inteira):** "mudo para a live" (pela barra e pelo diretor; a equipe ouve, a live não), ponto (só o alvo ouve, aparece "Diretor falando com você", o microfone principal do diretor fica mudo) e alternar "Só diretor" durante a live. Critério: **assistir à gravação no YouTube** e confirmar que nada privado vazou.
 - **Etapa 8 (inteira):** chat do YouTube no painel (aba Comentários), "Mostrar na tela"/"Ocultar" (o cartão aparece na prévia e na live), chat interno entre diretor e convidados, e destacar mensagem interna. Critério: **um comentário real aparece no layout da live**.
-- Etapa 9 em diante: listar aqui o que for publicado sem teste.
+- **Etapa 9 (inteira):** cores da marca, 4 temas, fontes, borda/formato da câmera, esconder/editar etiqueta, banners (faixa e letreiro), estilos e banners salvos. **Antes, rodar o SQL `20261011000004_banners_estilos.sql`** (sem ele, só as listas salvas ficam indisponíveis). Critério: trocar o tema muda etiquetas e banners **na live**; conferir também se a fonte escolhida aparece na gravação (o Egress precisa baixá-la antes de começar).
+- Etapa 10 em diante: listar aqui o que for publicado sem teste.
 
 ## 13. Cuidados técnicos conhecidos
 

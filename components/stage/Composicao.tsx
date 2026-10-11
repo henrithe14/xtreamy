@@ -12,7 +12,9 @@ import {
   type TrackReference,
 } from "@livekit/components-react";
 import { Track, type Participant } from "livekit-client";
-import type { Cena, ComentarioDestacado, CoresMarca } from "@/lib/cena";
+import type { Cena, CoresMarca } from "@/lib/cena";
+import { urlFonte, type Estilo } from "@/lib/estilo";
+import { BannerLive, CartaoComentario, EtiquetaNome } from "@/components/stage/Artes";
 import { obterLayout, type Slot } from "@/lib/layouts";
 import { ATRIBUTO_AUDIO_PRIVADO, lerMetadados } from "@/lib/participante";
 import { CartaoSoVoz } from "@/components/ui/CartaoSoVoz";
@@ -46,7 +48,12 @@ export function Composicao({ cena, previa = false }: Props) {
   const cameras = useTracks([Track.Source.Camera], { onlySubscribed: false });
 
   return (
-    <div className="@container relative aspect-video w-full overflow-hidden bg-[#070b16]">
+    <div
+      className="@container relative aspect-video w-full overflow-hidden bg-[#070b16]"
+      style={{ fontFamily: `"${cena.estilo.fonte}", ui-sans-serif, system-ui, sans-serif` }}
+    >
+      {/* Fonte das artes (Google Fonts). O React coloca o <link> no <head>. */}
+      <link rel="stylesheet" href={urlFonte(cena.estilo.fonte)} precedence="default" />
       <FundoMarca cores={cena.cores} />
 
       {palco.map((p, i) => (
@@ -55,6 +62,9 @@ export function Composicao({ cena, previa = false }: Props) {
           participante={p}
           slot={slots[i]}
           camera={cameras.find((c) => c.participant.identity === p.identity)}
+          estilo={cena.estilo}
+          cores={cena.cores}
+          mostrarEtiqueta={!cena.etiquetasOcultas.includes(p.identity)}
         />
       ))}
 
@@ -62,8 +72,14 @@ export function Composicao({ cena, previa = false }: Props) {
         <CartaoComentario
           key={`${cena.comentarioDestacado.autor}|${cena.comentarioDestacado.texto}`}
           comentario={cena.comentarioDestacado}
-          cor={cena.cores.primaria}
+          tema={cena.estilo.tema}
+          cores={cena.cores}
+          comBanner={cena.banner !== null}
         />
+      )}
+
+      {cena.banner && (
+        <BannerLive key={`${cena.banner.estilo}|${cena.banner.texto}`} banner={cena.banner} tema={cena.estilo.tema} cores={cena.cores} />
       )}
 
       {(cena.status === "intervalo" || cena.status === "encerrada") && (
@@ -101,31 +117,6 @@ export function FundoMarca({ cores }: { cores: CoresMarca }) {
   );
 }
 
-/** Comentário em destaque: embaixo à esquerda, por cima dos vídeos (camadas, seção 8.4). */
-function CartaoComentario({ comentario, cor }: { comentario: ComentarioDestacado; cor: string }) {
-  return (
-    <div className="absolute bottom-[5%] left-[3%] flex max-w-[46%] animate-[entrar_300ms_ease-out] items-start gap-[1cqw] rounded-[0.8cqw] bg-black/70 p-[1.1cqw] pr-[1.6cqw] shadow-[0_1cqw_3cqw_rgb(0_0_0/0.45)] ring-1 ring-white/10 backdrop-blur-md motion-reduce:animate-none">
-      {comentario.avatar ? (
-        // eslint-disable-next-line @next/next/no-img-element -- foto do autor no YouTube, tamanho fixo
-        <img src={comentario.avatar} alt="" className="size-[3.4cqw] shrink-0 rounded-full" referrerPolicy="no-referrer" />
-      ) : (
-        <span
-          className="flex size-[3.4cqw] shrink-0 items-center justify-center rounded-full text-[1.4cqw] font-bold text-white"
-          style={{ background: cor }}
-        >
-          {comentario.autor.trim()[0]?.toUpperCase()}
-        </span>
-      )}
-      <div className="min-w-0">
-        <p className="truncate text-[1.3cqw] font-semibold leading-tight" style={{ color: `color-mix(in srgb, ${cor} 55%, white)` }}>
-          {comentario.autor}
-        </p>
-        <p className="mt-[0.3cqw] line-clamp-4 text-[1.55cqw] leading-snug text-white">{comentario.texto}</p>
-      </div>
-    </div>
-  );
-}
-
 /** Tela cheia sobre tudo (intervalo/encerrada): fundo da marca e um texto grande. */
 function TelaCheiaMarca({ cores, texto }: { cores: CoresMarca; texto: string }) {
   return (
@@ -138,29 +129,72 @@ function TelaCheiaMarca({ cores, texto }: { cores: CoresMarca; texto: string }) 
   );
 }
 
-function SlotPessoa({ participante, slot, camera }: { participante: Participant; slot: Slot; camera?: TrackReference }) {
+/**
+ * No formato círculo, a moldura vira um quadrado centrado no slot. O tamanho sai da
+ * proporção do slot no quadro 16:9 (sem medir nada na tela).
+ */
+function caixaDaMoldura(slot: Slot, formato: Estilo["camera"]["formato"]) {
+  if (formato !== "circulo") return { left: "0%", top: "0%", width: "100%", height: "100%" };
+  const proporcao = (slot.w * 16) / (slot.h * 9); // largura/altura do slot em pixels
+  const w = proporcao > 1 ? 100 / proporcao : 100;
+  const h = proporcao > 1 ? 100 : proporcao * 100;
+  return { left: `${(100 - w) / 2}%`, top: `${(100 - h) / 2}%`, width: `${w}%`, height: `${h}%` };
+}
+
+type PropsSlot = {
+  participante: Participant;
+  slot: Slot;
+  camera?: TrackReference;
+  estilo: Estilo;
+  cores: CoresMarca;
+  mostrarEtiqueta: boolean;
+};
+
+function SlotPessoa({ participante, slot, camera, estilo, cores, mostrarEtiqueta }: PropsSlot) {
   const { name, metadata } = useParticipantInfo({ participant: participante });
   const { etiqueta } = lerMetadados(metadata);
   const falando = useIsSpeaking(participante);
   const comVideo = camera !== undefined && !camera.publication.isMuted;
   const nome = name || "Participante";
 
+  const { camera: moldura } = estilo;
+  const circulo = moldura.formato === "circulo";
+  const raio = circulo ? "50%" : moldura.formato === "arredondado" ? "1.2cqw" : "0";
+
   return (
     <div
-      className="absolute overflow-hidden rounded-[0.6cqw] bg-superficie-2 transition-[left,top,width,height] duration-300 ease-out motion-reduce:transition-none"
+      className="absolute transition-[left,top,width,height] duration-300 ease-out motion-reduce:transition-none"
       style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.w}%`, height: `${slot.h}%` }}
     >
-      {comVideo ? (
-        <VideoTrack trackRef={camera} className="size-full object-cover" />
-      ) : (
-        <CartaoSoVoz nome={nome} falando={falando} className="absolute inset-0" />
-      )}
-
-      {/* Etiqueta: nome + etiqueta do participante. */}
-      <div className="absolute bottom-[4%] left-[3%] max-w-[90%] rounded-[0.4cqw] bg-black/55 px-[1cqw] py-[0.5cqw] backdrop-blur-md">
-        <p className="truncate text-[1.5cqw] font-semibold leading-tight text-white">{nome}</p>
-        {etiqueta && <p className="truncate text-[1.1cqw] leading-tight text-white/75">{etiqueta}</p>}
+      <div
+        className="absolute overflow-hidden bg-superficie-2 transition-[border-radius] duration-300"
+        style={{
+          ...caixaDaMoldura(slot, moldura.formato),
+          borderRadius: raio,
+        }}
+      >
+        {comVideo ? (
+          <VideoTrack trackRef={camera} className="size-full object-cover" />
+        ) : (
+          <CartaoSoVoz nome={nome} falando={falando} className="absolute inset-0" />
+        )}
+        {/* Borda por cima do vídeo, em px do quadro 1920×1080 → cqw (1cqw = 19,2px). */}
+        {moldura.borda > 0 && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{ borderRadius: raio, boxShadow: `inset 0 0 0 ${moldura.borda / 19.2}cqw ${moldura.corBorda}` }}
+          />
+        )}
       </div>
+
+      {mostrarEtiqueta && (
+        <div
+          className={`absolute bottom-[5%] max-w-[90%] ${circulo ? "left-1/2 -translate-x-1/2" : "left-[3%]"}`}
+        >
+          <EtiquetaNome nome={nome} etiqueta={etiqueta} tema={estilo.tema} cores={cores} />
+        </div>
+      )}
     </div>
   );
 }

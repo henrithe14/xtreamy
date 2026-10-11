@@ -41,6 +41,8 @@ import { PainelPessoas } from "@/components/estudio/PainelPessoas";
 import { Previa } from "@/components/estudio/Previa";
 import { SeletorLayout } from "@/components/estudio/SeletorLayout";
 import { ChatEstudio, PainelComentarios } from "@/components/estudio/PainelComentarios";
+import { PainelEstilo } from "@/components/estudio/PainelEstilo";
+import { PainelBanners } from "@/components/estudio/PainelBanners";
 import { ControlesLive, Cronometro } from "@/components/estudio/ControlesLive";
 import { StatusTally } from "@/components/ui/StatusTally";
 
@@ -113,7 +115,15 @@ export function Sala({
 /** Diretor: prévia + disposições à esquerda, pessoas (palco/bastidor) à direita. */
 function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temChat: boolean }) {
   const { cena, alterar, erro } = useControleCena(transmissaoId);
-  const [abaLateral, setAbaLateral] = useState<"pessoas" | "comentarios">("pessoas");
+  const [abaLateral, setAbaLateral] = useState<"pessoas" | "comentarios" | "estilo" | "banners">("pessoas");
+
+  async function editarEtiqueta(identity: string, etiqueta: string) {
+    await fetch("/api/participante", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transmissaoId, alvo: identity, etiqueta }),
+    });
+  }
   const ponto = usePonto(transmissaoId);
   const mudo = useAlternarMudoParaLive(transmissaoId);
   const participantes = useRemoteParticipants();
@@ -160,6 +170,8 @@ function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temC
             [
               ["pessoas", "Pessoas"],
               ["comentarios", "Comentários"],
+              ["estilo", "Estilo"],
+              ["banners", "Banners"],
             ] as const
           ).map(([id, rotulo]) => (
             <button
@@ -168,7 +180,7 @@ function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temC
               role="tab"
               aria-selected={abaLateral === id}
               onClick={() => setAbaLateral(id)}
-              className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+              className={`flex-1 rounded-lg px-2 py-2 text-sm font-semibold transition-colors ${
                 abaLateral === id ? "bg-white/10 text-texto" : "text-texto-suave hover:text-texto"
               }`}
             >
@@ -186,6 +198,15 @@ function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temC
               alternarMudo: (identity, valor) => void mudo.alternar(identity, valor),
               mudoPendente: mudo.pendente,
               ponto,
+              etiquetasOcultas: cena.etiquetasOcultas,
+              alternarEtiqueta: (identity) =>
+                alterar((c) => ({
+                  ...c,
+                  etiquetasOcultas: c.etiquetasOcultas.includes(identity)
+                    ? c.etiquetasOcultas.filter((x) => x !== identity)
+                    : [...c.etiquetasOcultas, identity],
+                })),
+              editarEtiqueta,
             }}
           />
         </div>
@@ -200,6 +221,12 @@ function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temC
               ocultar: () => alterar((c) => ({ ...c, comentarioDestacado: null })),
             }}
           />
+        </section>
+        <section hidden={abaLateral !== "estilo"} aria-label="Estilo" className="vidro rounded-xl p-3 sm:p-4">
+          <PainelEstilo cena={cena} alterar={alterar} />
+        </section>
+        <section hidden={abaLateral !== "banners"} aria-label="Banners" className="vidro rounded-xl p-3 sm:p-4">
+          <PainelBanners cena={cena} alterar={alterar} />
         </section>
       </div>
     </main>
