@@ -40,14 +40,20 @@ export function PainelPessoas({ cena, transmissaoId, alterar }: Props) {
   const destacar = (id: string) => alterar((c) => ({ ...c, noPalco: [id, ...c.noPalco.filter((x) => x !== id)] }));
 
   return (
-    <section aria-label="Pessoas" className="vidro flex flex-col gap-5 rounded-xl p-4">
+    <section
+      aria-label="Pessoas"
+      className="vidro flex flex-col gap-5 rounded-xl p-3 sm:p-4 deitado:max-h-[calc(100dvh-7.5rem)] deitado:overflow-y-auto lg:max-h-[calc(100dvh-10rem)] lg:overflow-y-auto"
+    >
       <Grupo titulo="No palco" contagem={palco.length} vazio="Ninguém no palco ainda.">
         {palco.map((id, i) => {
           const p = porIdentity.get(id);
           if (!p) {
             return (
-              <li key={id} className="flex items-center justify-between gap-2 rounded-md bg-white/[0.03] px-3 py-2 text-sm text-texto-suave">
-                Saiu da sala
+              <li
+                key={id}
+                className="flex flex-col justify-between gap-2 rounded-lg bg-white/[0.03] p-2 text-sm text-texto-suave ring-1 ring-white/[0.06]"
+              >
+                <span className="flex aspect-video items-center justify-center rounded-md bg-black/20 text-xs">Saiu da sala</span>
                 <BotaoAcao onClick={() => tirarDoPalco(id)}>Tirar</BotaoAcao>
               </li>
             );
@@ -108,7 +114,11 @@ function Grupo({ titulo, contagem, vazio, children }: { titulo: string; contagem
         {titulo}
         <span className="rounded-full bg-white/[0.08] px-2 text-xs text-texto-suave">{contagem}</span>
       </h2>
-      {contagem === 0 ? <p className="text-sm text-texto-suave">{vazio}</p> : <ul className="flex flex-col gap-2">{children}</ul>}
+      {contagem === 0 ? (
+        <p className="text-sm text-texto-suave">{vazio}</p>
+      ) : (
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,10rem),1fr))] gap-2">{children}</ul>
+      )}
     </div>
   );
 }
@@ -132,9 +142,9 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, foraDaLive }: 
   const local = participante.isLocal;
 
   return (
-    <li className="flex items-center gap-3 rounded-md bg-white/[0.03] p-2 ring-1 ring-white/[0.06]">
+    <li className="flex flex-col gap-2 rounded-lg bg-white/[0.03] p-2 ring-1 ring-white/[0.06]">
       <div
-        className={`relative aspect-video w-24 shrink-0 overflow-hidden rounded bg-superficie-2 outline-2 transition-[outline-color] ${
+        className={`relative aspect-video w-full overflow-hidden rounded-md bg-superficie-2 outline-2 -outline-offset-2 transition-[outline-color] ${
           falando ? "outline-pronto" : "outline-transparent"
         }`}
       >
@@ -143,8 +153,13 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, foraDaLive }: 
         ) : (
           <CartaoSoVoz nome={nome} falando={false} className="absolute inset-0" />
         )}
+        {!local && identity && (
+          <div className="absolute top-1 right-1">
+            <BotaoRemover transmissaoId={transmissaoId} identity={identity} nome={nome} />
+          </div>
+        )}
       </div>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 px-0.5">
         <p className="flex items-center gap-1.5 truncate text-sm font-semibold">
           {micMudo && <MicrophoneSlash weight="fill" className="size-3.5 shrink-0 text-no-ar" aria-label="Microfone desligado" />}
           <span className="truncate">
@@ -162,10 +177,7 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, foraDaLive }: 
               : etiqueta || "Convidado"}
         </p>
       </div>
-      <div className="flex shrink-0 items-center gap-1">
-        {acoes}
-        {!local && identity && <BotaoRemover transmissaoId={transmissaoId} identity={identity} nome={nome} />}
-      </div>
+      <div className="flex items-center gap-1 [&>*:last-child]:flex-1">{acoes}</div>
     </li>
   );
 }
@@ -186,7 +198,7 @@ function BotaoAcao({ onClick, children, rotulo, destaque, desativado }: PropsBot
       aria-label={rotulo}
       title={rotulo}
       disabled={desativado}
-      className={`inline-flex min-h-9 items-center gap-1 rounded-md px-2.5 text-xs font-semibold transition-colors disabled:opacity-40 [&_svg]:size-4 ${
+      className={`inline-flex min-h-9 items-center justify-center gap-1 rounded-md px-2.5 text-xs font-semibold transition-colors disabled:opacity-40 [&_svg]:size-4 ${
         destaque
           ? "bg-destaque text-destaque-texto hover:bg-destaque-forte"
           : "bg-white/[0.06] text-texto ring-1 ring-white/10 ring-inset hover:bg-white/10"
@@ -209,7 +221,7 @@ function BotaoRemover({ transmissaoId, identity, nome }: { transmissaoId: string
         onClick={() => setConfirmando(true)}
         aria-label={`Remover ${nome} da sala`}
         title="Remover da sala"
-        className="rounded-md p-2 text-texto-suave hover:bg-no-ar/15 hover:text-no-ar"
+        className="rounded-md bg-black/50 p-1.5 text-white/80 backdrop-blur-sm hover:bg-no-ar hover:text-white"
       >
         <UserMinus weight="fill" className="size-4" />
       </button>
@@ -217,7 +229,7 @@ function BotaoRemover({ transmissaoId, identity, nome }: { transmissaoId: string
   }
 
   return (
-    <span className="flex items-center gap-1">
+    <span className="flex items-center gap-1 rounded-md bg-black/70 p-1 backdrop-blur-sm">
       <button
         type="button"
         disabled={removendo}
@@ -234,7 +246,7 @@ function BotaoRemover({ transmissaoId, identity, nome }: { transmissaoId: string
       <button
         type="button"
         onClick={() => setConfirmando(false)}
-        className="rounded-md px-2 py-1.5 text-xs text-texto-suave hover:bg-white/[0.06]"
+        className="rounded-md px-2 py-1.5 text-xs text-white/80 hover:bg-white/10"
       >
         Cancelar
       </button>

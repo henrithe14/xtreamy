@@ -6,6 +6,7 @@ import { criarTransmissao, type EstadoNovaTransmissao } from "@/lib/acoes/transm
 import { Botao } from "@/components/ui/Botao";
 import { AreaTexto, CampoTexto, MensagemErro } from "@/components/ui/Campo";
 import { Dialogo } from "@/components/ui/Dialogo";
+import { Interruptor } from "@/components/ui/Selecao";
 
 const OPCOES_PRIVACIDADE = [
   { valor: "nao_listada", rotulo: "Não listada", dica: "Só quem tem o link do YouTube assiste." },
@@ -90,6 +91,8 @@ function FormNovaTransmissao({ aoCriar }: { aoCriar: () => void }) {
         ))}
       </fieldset>
 
+      <Agendamento />
+
       <p className="rounded-md bg-white/[0.04] px-3 py-2.5 text-sm text-texto-suave">
         O canal do YouTube é escolhido depois, antes de ir ao vivo.
       </p>
@@ -99,5 +102,50 @@ function FormNovaTransmissao({ aoCriar }: { aoCriar: () => void }) {
         {enviando ? "Criando…" : "Criar transmissão"}
       </Botao>
     </form>
+  );
+}
+
+/** Data e hora locais (formato do input datetime-local), arredondadas para a próxima hora. */
+function proximaHoraLocal(): string {
+  const d = new Date();
+  d.setHours(d.getHours() + 1, 0, 0, 0);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/**
+ * Agendar a live: o horário é escolhido no fuso do navegador e enviado em ISO (UTC),
+ * para o servidor não precisar adivinhar o fuso de quem criou.
+ */
+function Agendamento() {
+  const [agendar, setAgendar] = useState(false);
+  const [local, setLocal] = useState("");
+  const data = agendar && local ? new Date(local) : null;
+  const iso = data && !Number.isNaN(data.getTime()) ? data.toISOString() : "";
+
+  return (
+    <div className="flex flex-col gap-3">
+      <Interruptor
+        id="agendar"
+        rotulo="Agendar"
+        dica="A live aparece como “Em breve” no YouTube, com lembrete para o público."
+        ligado={agendar}
+        aoMudar={(ligado) => {
+          setAgendar(ligado);
+          if (ligado && !local) setLocal(proximaHoraLocal());
+        }}
+      />
+      {agendar && (
+        <CampoTexto
+          id="agendada-para"
+          type="datetime-local"
+          rotulo="Data e hora de início"
+          value={local}
+          onChange={(e) => setLocal(e.target.value)}
+          required
+        />
+      )}
+      <input type="hidden" name="agendada_para" value={iso} />
+    </div>
   );
 }

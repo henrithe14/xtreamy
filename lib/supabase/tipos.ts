@@ -15,6 +15,8 @@ type LinhaTransmissao = {
   youtube_broadcast_id: string | null;
   live_chat_id: string | null;
   egress_id: string | null;
+  /** ISO; nulo = sem agendamento. */
+  agendada_para: string | null;
   criado_em: string;
 };
 

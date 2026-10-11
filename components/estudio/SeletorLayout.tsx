@@ -17,7 +17,7 @@ export function SeletorLayout({ layoutId, pessoasNoPalco, aoEscolher }: Props) {
 
   return (
     <section aria-labelledby="titulo-layouts" className="flex flex-col gap-3">
-      <h2 id="titulo-layouts" className="text-sm font-semibold">
+      <h2 id="titulo-layouts" className="text-sm font-semibold deitado:sr-only">
         Disposição
       </h2>
       <div role="radiogroup" aria-labelledby="titulo-layouts" className="flex flex-wrap gap-2">
@@ -49,7 +49,7 @@ function BotaoLayout({ layout, ativo, aoEscolher }: { layout: Layout; ativo: boo
           : "bg-white/[0.04] text-texto-suave ring-1 ring-white/10 hover:bg-white/[0.08] hover:text-texto"
       }`}
     >
-      <svg viewBox="0 0 160 90" className="w-24 rounded-sm bg-black/30" aria-hidden>
+      <svg viewBox="0 0 160 90" className="w-20 rounded-sm bg-black/30 deitado:w-12" aria-hidden>
         {slots.map((s, i) => (
           <rect
             key={i}

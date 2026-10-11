@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Celular deitado: paisagem com pouca altura. O estúdio vira duas colunas compactas. */
+@custom-variant deitado (@media (orientation: landscape) and (max-height: 560px));
+
 /*
   Identidade Xtreamy (CLAUDE.md, seção 9). Sala de controle escura, com luz de estúdio
   azul e verde ao fundo e painéis de vidro por cima.

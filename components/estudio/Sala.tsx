@@ -64,7 +64,7 @@ export function Sala({
 
       <nav
         aria-label="Controles"
-        className="sticky bottom-0 flex flex-wrap items-center justify-center gap-2 border-t border-vidro-borda bg-fundo/60 px-3 py-3 backdrop-blur-xl"
+        className="sticky bottom-0 z-20 flex flex-wrap items-center justify-center gap-2 border-t border-vidro-borda bg-fundo/60 px-3 py-3 backdrop-blur-xl deitado:py-1.5"
       >
         <AlternarMidia fonte={Track.Source.Microphone} />
         {!soDiretor && <AlternarMidia fonte={Track.Source.Camera} />}
@@ -84,8 +84,8 @@ export function Sala({
 function PainelDiretor({ transmissaoId }: { transmissaoId: string }) {
   const { cena, alterar, erro } = useControleCena(transmissaoId);
   return (
-    <main className="mx-auto grid w-full max-w-[100rem] flex-1 gap-4 p-3 sm:p-5 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
-      <div className="flex min-w-0 flex-col gap-4">
+    <main className="mx-auto grid w-full max-w-[100rem] flex-1 gap-4 p-3 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] lg:items-start deitado:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] deitado:items-start deitado:gap-3 deitado:p-2">
+      <div className="flex min-w-0 flex-col gap-4 deitado:gap-2">
         <Previa cena={cena} urlSaida={`/stage?t=${transmissaoId}`} />
         {erro && (
           <p role="alert" className="text-sm text-no-ar">
@@ -107,7 +107,7 @@ function PainelDiretor({ transmissaoId }: { transmissaoId: string }) {
 function PainelConvidado() {
   const cena = useCena();
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 p-3 sm:p-5">
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center gap-4 p-3 sm:p-5 deitado:gap-2 deitado:p-2">
       <EstadoNoPalco cena={cena} />
       <Previa cena={cena} />
     </main>
@@ -137,7 +137,7 @@ function BarraSuperior({ titulo, papel, soDiretor }: { titulo: string; papel: Pa
   const reconectando = estado === ConnectionState.Reconnecting || estado === ConnectionState.SignalReconnecting;
 
   return (
-    <header className="sticky top-0 z-20 flex min-h-14 items-center gap-3 border-b border-vidro-borda bg-fundo/60 px-3 backdrop-blur-xl sm:px-6">
+    <header className="sticky top-0 z-20 flex min-h-14 items-center gap-3 border-b border-vidro-borda bg-fundo/60 px-3 backdrop-blur-xl sm:px-6 deitado:min-h-10">
       <SimboloMarca className="size-7 shrink-0" />
       <div className="min-w-0 flex-1">
         <h1 className="truncate font-semibold">{titulo}</h1>

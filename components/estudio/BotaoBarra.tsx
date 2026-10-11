@@ -23,10 +23,10 @@ export function BotaoBarra({ rotulo, onClick, children, ligado, perigo = false, 
       onClick={onClick}
       disabled={desativado}
       aria-pressed={ligado}
-      className={`flex min-h-14 min-w-16 flex-col items-center justify-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 [&_svg]:size-6 ${cor}`}
+      className={`flex min-h-14 min-w-16 flex-col items-center justify-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 [&_svg]:size-6 deitado:min-h-10 deitado:min-w-12 deitado:[&_svg]:size-5 ${cor}`}
     >
       {children}
-      {rotulo}
+      <span className="deitado:sr-only">{rotulo}</span>
     </button>
   );
 }

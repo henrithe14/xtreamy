@@ -29,12 +29,16 @@ export async function criarTransmissao(
   if (descricao.length > LIMITES.descricao) {
     return { tipo: "erro", mensagem: `A descrição pode ter até ${LIMITES.descricao} caracteres.`, campos };
   }
+  const agendadaPara = lerAgendamento(String(formData.get("agendada_para") ?? ""));
+  if (agendadaPara === "invalido") {
+    return { tipo: "erro", mensagem: "Escolha uma data e hora no futuro, em até 1 ano.", campos };
+  }
   const privacidade = PRIVACIDADES.find((p) => p === privacidadeBruta) ?? ("nao_listada" satisfies Privacidade);
 
   const supabase = await criarClienteServidor();
   const { data, error } = await supabase
     .from("transmissoes")
-    .insert({ titulo, descricao, privacidade, codigo_convite: gerarCodigoConvite() })
+    .insert({ titulo, descricao, privacidade, agendada_para: agendadaPara, codigo_convite: gerarCodigoConvite() })
     .select("id")
     .single();
 
@@ -44,6 +48,16 @@ export async function criarTransmissao(
 
   refresh();
   return { tipo: "criada", id: data.id };
+}
+
+/** Vazio = sem agendamento; senão uma data ISO entre agora e 1 ano. */
+function lerAgendamento(bruto: string): string | null | "invalido" {
+  if (!bruto) return null;
+  const data = new Date(bruto);
+  const agora = Date.now();
+  if (Number.isNaN(data.getTime())) return "invalido";
+  if (data.getTime() < agora + 60_000 || data.getTime() > agora + 365 * 24 * 3600_000) return "invalido";
+  return data.toISOString();
 }
 
 export async function excluirTransmissao(id: string): Promise<{ erro?: string }> {

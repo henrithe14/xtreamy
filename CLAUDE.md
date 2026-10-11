@@ -83,7 +83,7 @@ Crie também um `.env.example` com as mesmas chaves vazias e mantenha `.env.loca
 Tabelas iniciais (com RLS: cada usuário só vê o que é seu):
 
 - `destinos`: id, user_id, tipo ('youtube'), nome do canal, channel_id, refresh_token **criptografado**.
-- `transmissoes`: id, user_id, titulo, descricao, privacidade ('publica' | 'nao_listada' | 'privada'), destino_id, status ('rascunho' | 'ensaio' | 'ao_vivo' | 'intervalo' | 'encerrada'), codigo_convite, youtube_broadcast_id, live_chat_id, egress_id, criado_em. Convidados (sem conta) não leem a tabela: o convite é validado pela função `dados_convite(id, codigo)` (security definer), que devolve só o título.
+- `transmissoes`: id, user_id, titulo, descricao, privacidade ('publica' | 'nao_listada' | 'privada'), agendada_para (início previsto; vira o scheduledStartTime do YouTube na Etapa 5), destino_id, status ('rascunho' | 'ensaio' | 'ao_vivo' | 'intervalo' | 'encerrada'), codigo_convite, youtube_broadcast_id, live_chat_id, egress_id, criado_em. Convidados (sem conta) não leem a tabela: o convite é validado pela função `dados_convite(id, codigo)` (security definer), que devolve só o título.
 - `layouts`: id, user_id (null = padrão do sistema), nome, definicao (JSON, seção 8.3).
 - `estilos`: id, user_id, nome, definicao (JSON: tema, cores, fontes, câmera).
 - `ativos`: id, user_id, tipo ('logo' | 'overlay' | 'vinheta' | 'midia' | 'fundo' | 'musica' | 'efeito'), nome, url (Storage), metadados (duração, categoria: 'iniciar' | 'volto-logo' | 'finalizar'…).
@@ -179,7 +179,7 @@ Efeitos sonoros **não** ficam na cena (são disparos pontuais): o host envia um
 
 ### 8.1 Destino e Nova Transmissão
 - **Destinos:** o usuário conecta um canal do YouTube via OAuth (escopo de gerenciar o YouTube). O refresh token fica criptografado em `destinos`.
-- **Nova Transmissão:** título, descrição, destino e privacidade (pública, não listada, privada). O servidor cria automaticamente no YouTube o `liveBroadcast` e o `liveStream` e os vincula, obtendo a URL RTMP, a chave e o `liveChatId` **sem o usuário copiar chave nenhuma**.
+- **Nova Transmissão:** título, descrição, destino, privacidade (pública, não listada, privada) e **agendamento opcional** (data/hora; a live aparece como "Em breve" no YouTube). O servidor cria automaticamente no YouTube o `liveBroadcast` e o `liveStream` e os vincula, obtendo a URL RTMP, a chave e o `liveChatId` **sem o usuário copiar chave nenhuma**.
 - Gera o link de convite da transmissão.
 
 ### 8.2 Iniciar / Intervalo / Encerrar

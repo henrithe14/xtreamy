@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowSquareOut } from "@phosphor-icons/react";
+import { useEffect, useState } from "react";
+import { ArrowSquareOut, ArrowsIn, ArrowsOut } from "@phosphor-icons/react";
 import type { Cena } from "@/lib/cena";
 import { Composicao } from "@/components/stage/Composicao";
 import { StatusTally } from "@/components/ui/StatusTally";
@@ -11,26 +12,66 @@ type Props = {
   urlSaida?: string;
 };
 
-/** Prévia ao vivo do que vai ao ar, com as marcas de área segura. */
+const CHAVE_TAMANHO = "estudio:previa-compacta";
+
+/**
+ * Prévia ao vivo do que vai ao ar, com as marcas de área segura. A altura é limitada
+ * (normal ou compacta, lembrada no navegador) para sobrar espaço para as pessoas.
+ */
 export function Previa({ cena, urlSaida }: Props) {
+  const [compacta, setCompacta] = useState(false);
+
+  useEffect(() => {
+    try {
+      // Preferência lida só no cliente, uma vez.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCompacta(localStorage.getItem(CHAVE_TAMANHO) === "1");
+    } catch {}
+  }, []);
+
+  function alternar() {
+    setCompacta((atual) => {
+      try {
+        localStorage.setItem(CHAVE_TAMANHO, atual ? "0" : "1");
+      } catch {}
+      return !atual;
+    });
+  }
+
   return (
-    <section aria-label="Prévia da live" className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-3">
+    <section
+      aria-label="Prévia da live"
+      // --altura: altura máxima da prévia; a largura sai dela (16:9), sem passar da coluna.
+      className={`flex w-[min(100%,calc(var(--altura)*16/9))] flex-col gap-2 deitado:[--altura:calc(100dvh-8.5rem)] ${
+        compacta ? "[--altura:30dvh]" : "[--altura:52dvh]"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3">
-          <h2 className="text-sm font-semibold">Prévia da live</h2>
+          <h2 className="text-sm font-semibold deitado:sr-only">Prévia da live</h2>
           <StatusTally status={cena.status} />
         </div>
-        {urlSaida && (
-          <a
-            href={urlSaida}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-texto-suave hover:bg-white/[0.06] hover:text-texto"
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={alternar}
+            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-texto-suave hover:bg-white/[0.06] hover:text-texto deitado:hidden"
           >
-            <ArrowSquareOut weight="bold" className="size-4" aria-hidden />
-            Abrir saída
-          </a>
-        )}
+            {compacta ? <ArrowsOut weight="bold" className="size-4" aria-hidden /> : <ArrowsIn weight="bold" className="size-4" aria-hidden />}
+            {compacta ? "Prévia maior" : "Prévia menor"}
+          </button>
+          {urlSaida && (
+            <a
+              href={urlSaida}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-texto-suave hover:bg-white/[0.06] hover:text-texto"
+            >
+              <ArrowSquareOut weight="bold" className="size-4" aria-hidden />
+              <span className="deitado:sr-only">Abrir saída</span>
+            </a>
+          )}
+        </div>
       </div>
       <div className="relative overflow-hidden rounded-xl ring-1 ring-white/10">
         <Composicao cena={cena} previa />

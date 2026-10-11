@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowSquareIn, VideoCamera, WarningCircle } from "@phosphor-icons/react/ssr";
+import { ArrowSquareIn, CalendarBlank, VideoCamera, WarningCircle } from "@phosphor-icons/react/ssr";
 import { exigirUsuario } from "@/lib/auth";
 import { listarTransmissoes, urlConvite, type Transmissao } from "@/lib/transmissoes";
 import { StatusTally } from "@/components/ui/StatusTally";
@@ -54,8 +54,16 @@ export async function ListaTransmissoes() {
               <StatusTally status={t.status} />
               <h2 className="min-w-0 truncate text-lg font-semibold">{t.titulo}</h2>
             </div>
-            <p className="text-sm text-texto-suave">
-              Criada em {formatoData.format(new Date(t.criado_em))}, {PRIVACIDADE[t.privacidade].toLowerCase()}
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-texto-suave">
+              {t.agendada_para ? (
+                <span className="inline-flex items-center gap-1.5 font-medium text-texto">
+                  <CalendarBlank weight="fill" className="size-4 text-pronto" aria-hidden />
+                  Agendada para {formatoData.format(new Date(t.agendada_para))}
+                </span>
+              ) : (
+                <span>Criada em {formatoData.format(new Date(t.criado_em))}</span>
+              )}
+              <span>{PRIVACIDADE[t.privacidade]}</span>
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
