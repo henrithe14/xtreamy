@@ -181,6 +181,8 @@ Efeitos sonoros **não** ficam na cena (são disparos pontuais): o host envia um
 - **Destinos:** o usuário conecta um canal do YouTube via OAuth (escopo de gerenciar o YouTube). O refresh token fica criptografado em `destinos`.
 - **Nova Transmissão:** título, descrição, destino, privacidade (pública, não listada, privada) e **agendamento opcional** (data/hora; a live aparece como "Em breve" no YouTube). O servidor cria automaticamente no YouTube o `liveBroadcast` e o `liveStream` e os vincula, obtendo a URL RTMP, a chave e o `liveChatId` **sem o usuário copiar chave nenhuma**.
 - Gera o link de convite da transmissão.
+- Implementação (Etapa 5): OAuth em `/api/youtube/conectar` → `/api/youtube/callback` (state em cookie httpOnly; redirect = origem da requisição + `/api/youtube/callback`, cadastrado no Google Cloud para localhost e produção). Refresh token cifrado com AES-256-GCM (`lib/cripto.ts`, `TOKEN_ENCRYPTION_KEY`); o usuário logado não lê a coluna (permissão por coluna); só o servidor lê via `lib/supabase/admin.ts`. `lib/youtube.ts` usa `fetch` direto (sem a lib googleapis). A live é criada sem início/fim automático e sem monitor stream. **A chave RTMP não é salva**: é buscada no YouTube ao iniciar (Etapa 6). Excluir a transmissão só apaga a live no YouTube se ela nunca foi ao ar (`rascunho`/`ensaio`).
+- Enquanto o app do Google estiver em modo **Teste**, o refresh token expira em 7 dias (reconectar em Destinos); para acabar com isso, pedir a verificação do app.
 
 ### 8.2 Iniciar / Intervalo / Encerrar
 - **Iniciar:** inicia um **RoomCompositeEgress** com `customBaseUrl = APP_BASE_URL + '/stage'`, saída RTMP (1080p, 30fps). Depois faz a transição do broadcast para "live" quando o YouTube indicar que o sinal chegou.

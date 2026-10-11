@@ -6,7 +6,10 @@ import { criarTransmissao, type EstadoNovaTransmissao } from "@/lib/acoes/transm
 import { Botao } from "@/components/ui/Botao";
 import { AreaTexto, CampoTexto, MensagemErro } from "@/components/ui/Campo";
 import { Dialogo } from "@/components/ui/Dialogo";
-import { Interruptor } from "@/components/ui/Selecao";
+import { Interruptor, Selecao } from "@/components/ui/Selecao";
+
+/** Canal conectado, só com o que o formulário precisa (nada de token). */
+export type OpcaoDestino = { id: string; nome: string };
 
 const OPCOES_PRIVACIDADE = [
   { valor: "nao_listada", rotulo: "Não listada", dica: "Só quem tem o link do YouTube assiste." },
@@ -14,7 +17,7 @@ const OPCOES_PRIVACIDADE = [
   { valor: "privada", rotulo: "Privada", dica: "Só você e quem você autorizar no YouTube." },
 ] as const;
 
-export function NovaTransmissao() {
+export function NovaTransmissao({ destinos }: { destinos: OpcaoDestino[] }) {
   const [aberto, setAberto] = useState(false);
   // A key remonta o formulário a cada abertura, limpando campos e erros.
   const [rodada, setRodada] = useState(0);
@@ -31,13 +34,13 @@ export function NovaTransmissao() {
         Nova transmissão
       </Botao>
       <Dialogo aberto={aberto} aoFechar={() => setAberto(false)} titulo="Nova transmissão">
-        <FormNovaTransmissao key={rodada} aoCriar={() => setAberto(false)} />
+        <FormNovaTransmissao key={rodada} destinos={destinos} aoCriar={() => setAberto(false)} />
       </Dialogo>
     </>
   );
 }
 
-function FormNovaTransmissao({ aoCriar }: { aoCriar: () => void }) {
+function FormNovaTransmissao({ destinos, aoCriar }: { destinos: OpcaoDestino[]; aoCriar: () => void }) {
   const [estado, acao, enviando] = useActionState<EstadoNovaTransmissao, FormData>(
     criarTransmissao,
     { tipo: "inicial" },
@@ -93,13 +96,28 @@ function FormNovaTransmissao({ aoCriar }: { aoCriar: () => void }) {
 
       <Agendamento />
 
-      <p className="rounded-md bg-white/[0.04] px-3 py-2.5 text-sm text-texto-suave">
-        O canal do YouTube é escolhido depois, antes de ir ao vivo.
-      </p>
+      {destinos.length > 0 ? (
+        <Selecao id="destino" name="destino_id" rotulo="Publicar em" defaultValue={destinos[0].id}>
+          {destinos.map((d) => (
+            <option key={d.id} value={d.id}>
+              YouTube: {d.nome}
+            </option>
+          ))}
+          <option value="">Nenhum canal por enquanto (só ensaio)</option>
+        </Selecao>
+      ) : (
+        <p className="rounded-md bg-white/[0.04] px-3 py-2.5 text-sm text-texto-suave">
+          Nenhum canal conectado. Para publicar no YouTube,{" "}
+          <a href="/destinos" className="font-semibold text-destaque hover:underline">
+            conecte seu canal em Destinos
+          </a>
+          . Sem canal, a transmissão serve só para ensaio.
+        </p>
+      )}
 
       <MensagemErro>{estado.tipo === "erro" ? estado.mensagem : undefined}</MensagemErro>
       <Botao type="submit" disabled={enviando}>
-        {enviando ? "Criando…" : "Criar transmissão"}
+        {enviando ? (destinos.length > 0 ? "Criando no YouTube…" : "Criando…") : "Criar transmissão"}
       </Botao>
     </form>
   );

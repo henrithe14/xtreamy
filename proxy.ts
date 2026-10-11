@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { atualizarSessao } from "@/lib/supabase/proxy";
 
 /** Rotas que exigem login (criador). Convidados usam só /t/[id]/entrar com código. */
-const ROTAS_PRIVADAS = ["/"];
+const ROTAS_PRIVADAS = ["/", "/destinos"];
 
 export async function proxy(request: NextRequest) {
   const { resposta, logado } = await atualizarSessao(request);

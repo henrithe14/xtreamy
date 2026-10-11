@@ -2,8 +2,10 @@
 
 import { refresh } from "next/cache";
 import { exigirUsuario } from "@/lib/auth";
+import { accessTokenDoDestino } from "@/lib/destinos";
 import { criarClienteServidor } from "@/lib/supabase/servidor";
 import { gerarCodigoConvite, LIMITES, PRIVACIDADES } from "@/lib/transmissoes";
+import { apagarLive, criarLive, ErroYouTube } from "@/lib/youtube";
 import type { Privacidade } from "@/lib/supabase/tipos";
 
 export type EstadoNovaTransmissao =
@@ -15,7 +17,7 @@ export async function criarTransmissao(
   _anterior: EstadoNovaTransmissao,
   formData: FormData,
 ): Promise<EstadoNovaTransmissao> {
-  await exigirUsuario();
+  const usuario = await exigirUsuario();
 
   const titulo = String(formData.get("titulo") ?? "").trim();
   const descricao = String(formData.get("descricao") ?? "").trim();
@@ -35,14 +37,47 @@ export async function criarTransmissao(
   }
   const privacidade = PRIVACIDADES.find((p) => p === privacidadeBruta) ?? ("nao_listada" satisfies Privacidade);
 
+  const destinoId = String(formData.get("destino_id") ?? "") || null;
+
+  // Com canal escolhido: cria a live no YouTube primeiro (broadcast + stream + bind).
+  let youtube: { broadcastId: string; streamId: string; liveChatId: string | null } | null = null;
+  let accessToken: string | null = null;
+  if (destinoId) {
+    try {
+      accessToken = await accessTokenDoDestino(destinoId, usuario.id);
+      youtube = await criarLive(accessToken, {
+        titulo,
+        descricao,
+        privacidade,
+        // O YouTube exige um início previsto; sem agendamento, "agora".
+        inicioPrevisto: agendadaPara ? new Date(agendadaPara) : new Date(Date.now() + 60_000),
+      });
+    } catch (e) {
+      const mensagem = e instanceof ErroYouTube ? e.message : "Não foi possível criar a live no YouTube.";
+      return { tipo: "erro", mensagem, campos };
+    }
+  }
+
   const supabase = await criarClienteServidor();
   const { data, error } = await supabase
     .from("transmissoes")
-    .insert({ titulo, descricao, privacidade, agendada_para: agendadaPara, codigo_convite: gerarCodigoConvite() })
+    .insert({
+      titulo,
+      descricao,
+      privacidade,
+      agendada_para: agendadaPara,
+      codigo_convite: gerarCodigoConvite(),
+      destino_id: destinoId,
+      youtube_broadcast_id: youtube?.broadcastId ?? null,
+      youtube_stream_id: youtube?.streamId ?? null,
+      live_chat_id: youtube?.liveChatId ?? null,
+    })
     .select("id")
     .single();
 
   if (error) {
+    // Não deixa uma live órfã no canal.
+    if (youtube && accessToken) await apagarLive(accessToken, youtube.broadcastId, youtube.streamId);
     return { tipo: "erro", mensagem: "Não foi possível salvar a transmissão. Tente de novo.", campos };
   }
 
@@ -60,9 +95,27 @@ function lerAgendamento(bruto: string): string | null | "invalido" {
   return data.toISOString();
 }
 
+/** Status em que a live nunca foi ao ar: apagar no YouTube não perde vídeo nenhum. */
+const NUNCA_FOI_AO_AR = new Set(["rascunho", "ensaio"]);
+
 export async function excluirTransmissao(id: string): Promise<{ erro?: string }> {
-  await exigirUsuario();
+  const usuario = await exigirUsuario();
   const supabase = await criarClienteServidor();
+
+  const { data: t } = await supabase
+    .from("transmissoes")
+    .select("status, destino_id, youtube_broadcast_id, youtube_stream_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (t?.destino_id && t.youtube_broadcast_id && NUNCA_FOI_AO_AR.has(t.status)) {
+    try {
+      const accessToken = await accessTokenDoDestino(t.destino_id, usuario.id);
+      await apagarLive(accessToken, t.youtube_broadcast_id, t.youtube_stream_id);
+    } catch {
+      // Sem acesso ao canal: apaga só no Xtreamy; a live fica no YouTube Studio.
+    }
+  }
+
   const { error } = await supabase.from("transmissoes").delete().eq("id", id);
   if (error) return { erro: "Não foi possível excluir. Tente de novo." };
   refresh();

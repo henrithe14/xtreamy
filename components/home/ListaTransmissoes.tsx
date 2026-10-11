@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { ArrowSquareIn, CalendarBlank, VideoCamera, WarningCircle } from "@phosphor-icons/react/ssr";
+import { ArrowSquareIn, ArrowSquareOut, CalendarBlank, VideoCamera, WarningCircle, YoutubeLogo } from "@phosphor-icons/react/ssr";
+import { listarDestinos } from "@/lib/destinos";
+import { linkStudio } from "@/lib/youtube";
 import { exigirUsuario } from "@/lib/auth";
 import { listarTransmissoes, urlConvite, type Transmissao } from "@/lib/transmissoes";
 import { StatusTally } from "@/components/ui/StatusTally";
@@ -33,6 +35,12 @@ export async function ListaTransmissoes() {
     );
   }
 
+  // Nome do canal de cada transmissão (se a lista de destinos falhar, só não mostra).
+  const canais = new Map<string, string>();
+  try {
+    for (const d of await listarDestinos()) canais.set(d.id, d.nome_canal);
+  } catch {}
+
   if (transmissoes.length === 0) {
     return (
       <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed border-white/15 bg-white/[0.02] px-6 py-10">
@@ -64,6 +72,20 @@ export async function ListaTransmissoes() {
                 <span>Criada em {formatoData.format(new Date(t.criado_em))}</span>
               )}
               <span>{PRIVACIDADE[t.privacidade]}</span>
+              {t.youtube_broadcast_id ? (
+                <a
+                  href={linkStudio(t.youtube_broadcast_id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 hover:text-texto"
+                >
+                  <YoutubeLogo weight="fill" className="size-4 text-[#ff3d3d]" aria-hidden />
+                  {(t.destino_id && canais.get(t.destino_id)) || "YouTube"}
+                  <ArrowSquareOut weight="bold" className="size-3.5" aria-label="abre no YouTube Studio" />
+                </a>
+              ) : (
+                <span>Sem canal (só ensaio)</span>
+              )}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -75,7 +97,7 @@ export async function ListaTransmissoes() {
               Entrar no estúdio
             </Link>
             <BotaoCopiarConvite url={urlConvite(t)} />
-            <BotaoExcluir id={t.id} titulo={t.titulo} />
+            <BotaoExcluir id={t.id} titulo={t.titulo} temLiveNoYoutube={Boolean(t.youtube_broadcast_id)} />
           </div>
         </li>
       ))}

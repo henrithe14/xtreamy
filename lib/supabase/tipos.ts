@@ -13,12 +13,26 @@ type LinhaTransmissao = {
   status: StatusTransmissao;
   codigo_convite: string;
   youtube_broadcast_id: string | null;
+  youtube_stream_id: string | null;
   live_chat_id: string | null;
   egress_id: string | null;
   /** ISO; nulo = sem agendamento. */
   agendada_para: string | null;
   criado_em: string;
 };
+
+/** Colunas que o usuário logado pode ler (o refresh token só o servidor lê). */
+export type LinhaDestino = {
+  id: string;
+  user_id: string;
+  tipo: "youtube";
+  channel_id: string;
+  nome_canal: string;
+  avatar_url: string | null;
+  criado_em: string;
+};
+
+type LinhaDestinoCompleta = LinhaDestino & { refresh_token_cifrado: string };
 
 export type Database = {
   public: {
@@ -28,6 +42,13 @@ export type Database = {
         Insert: Pick<LinhaTransmissao, "titulo" | "codigo_convite"> &
           Partial<Omit<LinhaTransmissao, "titulo" | "codigo_convite">>;
         Update: Partial<LinhaTransmissao>;
+        Relationships: [];
+      };
+      destinos: {
+        Row: LinhaDestinoCompleta;
+        Insert: Pick<LinhaDestinoCompleta, "user_id" | "channel_id" | "nome_canal" | "refresh_token_cifrado"> &
+          Partial<Pick<LinhaDestinoCompleta, "avatar_url" | "tipo">>;
+        Update: Partial<LinhaDestinoCompleta>;
         Relationships: [];
       };
     };
