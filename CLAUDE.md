@@ -203,6 +203,7 @@ type Layout = {
 - **Padrões do sistema:** solo, grade (2–10, automática), lado a lado, destaque + miniaturas, apresentação + câmeras, mídia em tela cheia.
 - **Editar / Novo:** editor visual com o canvas 16:9, arrastar e redimensionar slots, grade magnética, duplicar um padrão como ponto de partida e salvar em `layouts`.
 - Pessoas preenchem os slots `pessoa` na ordem de `noPalco`; o slot `apresentacao` recebe a tela compartilhada.
+- **Tela compartilhada nunca é cortada nem esticada:** o conteúdo aparece inteiro, na proporção real da tela/janela/aba compartilhada (ex.: janela estreita fica estreita), centralizado no slot `apresentacao` (`object-contain`), com o fundo da marca nas sobras. Ao contrário das câmeras, que preenchem o slot (`object-cover`). O layout de apresentação pode ajustar o slot à proporção da faixa (`track.dimensions`) para aproveitar melhor o quadro.
 
 ### 8.4 Camadas do `/stage` (de baixo para cima)
 fundo → vídeos/cartões nos slots → etiquetas (nome + etiqueta) → comentário destacado → banner/manchete → widgets (enquete, QR) → logo → overlay → mídia em tela cheia → vinheta.

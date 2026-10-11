@@ -43,7 +43,7 @@ export function Previa({ cena, urlSaida }: Props) {
       aria-label="Prévia da live"
       // --altura: altura máxima da prévia; a largura sai dela (16:9), sem passar da coluna.
       className={`flex w-[min(100%,calc(var(--altura)*16/9))] flex-col gap-2 deitado:[--altura:calc(100dvh-8.5rem)] ${
-        compacta ? "[--altura:30dvh]" : "[--altura:52dvh]"
+        compacta ? "[--altura:36dvh]" : "[--altura:62dvh]"
       }`}
     >
       <div className="flex items-center justify-between gap-2">
