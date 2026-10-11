@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import {
-  CheckCircle,
   Headphones,
   Microphone,
   SpeakerHigh,
@@ -13,7 +13,8 @@ import {
 import { useFaixasPrevia, type ErroMidia } from "@/hooks/useFaixasPrevia";
 import { useNivelAudio } from "@/hooks/useNivelAudio";
 import { usePreferenciasEntrada } from "@/hooks/usePreferenciasEntrada";
-import { LIMITES_IDENTIDADE, type Preferencias, type Resolucao } from "@/lib/preferencias";
+import { LIMITES_IDENTIDADE, semCamera, type Preferencias, type Resolucao } from "@/lib/preferencias";
+import type { ModoHost } from "@/lib/participante";
 import { desbloquearAudio, suportaEscolherSaida } from "@/lib/som";
 import { Botao } from "@/components/ui/Botao";
 import { CampoTexto, MensagemErro } from "@/components/ui/Campo";
@@ -23,7 +24,7 @@ import { PreviaCamera } from "@/components/entrar/PreviaCamera";
 import { SeletorAparelho } from "@/components/entrar/SeletorAparelho";
 import { TestarSom } from "@/components/entrar/TestarSom";
 
-type Props = { titulo: string; papel: "host" | "convidado" };
+type Props = { transmissaoId: string; codigo?: string; titulo: string; papel: "host" | "convidado" };
 
 const RESOLUCOES: { valor: Resolucao; rotulo: string }[] = [
   { valor: "h540", rotulo: "540p (rede fraca)" },
@@ -57,15 +58,18 @@ type PropsConteudo = Props & {
   tentarDeNovo: () => void;
 };
 
-function Conteudo({ titulo, papel, preferencias, atualizar, tentarDeNovo }: PropsConteudo) {
+function Conteudo({ transmissaoId, codigo, titulo, papel, preferencias, atualizar, tentarDeNovo }: PropsConteudo) {
+  const router = useRouter();
   // Aparelhos salvos valem só para criar as faixas; trocas depois vão direto na faixa.
   const [idsIniciais] = useState({ camera: preferencias.cameraId, microfone: preferencias.microfoneId });
-  const [pronto, setPronto] = useState(false);
+  const [entrando, setEntrando] = useState(false);
   const [erroNome, setErroNome] = useState<string>();
 
-  const { video, audio, erro } = useFaixasPrevia(preferencias, !pronto, idsIniciais);
+  const semCam = semCamera(preferencias, papel);
+  const soDiretor = papel === "host" && preferencias.modoHost === "diretor";
+  const { video, audio, erro } = useFaixasPrevia({ ...preferencias, soVoz: semCam }, !entrando, idsIniciais);
   const nivel = useNivelAudio(audio);
-  const carregando = !erro && !audio && !pronto;
+  const carregando = !erro && !audio && !entrando;
   const permitido = Boolean(audio);
 
   const mudarCamera = useCallback((id: string) => atualizar("cameraId", id), [atualizar]);
@@ -79,22 +83,10 @@ function Conteudo({ titulo, papel, preferencias, atualizar, tentarDeNovo }: Prop
       return;
     }
     await desbloquearAudio();
-    setPronto(true);
-  }
-
-  if (pronto) {
-    return (
-      <section className="flex max-w-xl flex-col items-start gap-3">
-        <CheckCircle weight="fill" className="size-10 text-pronto" aria-hidden />
-        <h1 className="fonte-larga text-2xl font-extrabold">Tudo pronto, {preferencias.nome.trim()}</h1>
-        <p className="text-texto-suave">
-          Suas escolhas ficaram salvas neste navegador. A sala ao vivo é a próxima etapa do projeto.
-        </p>
-        <Botao variante="secundario" onClick={() => setPronto(false)}>
-          Voltar para o teste
-        </Botao>
-      </section>
-    );
+    // Solta câmera e microfone da prévia; a sala liga de novo com as mesmas escolhas.
+    setEntrando(true);
+    const destino = `/t/${transmissaoId}/estudio${codigo ? `?c=${encodeURIComponent(codigo)}` : ""}`;
+    router.push(destino);
   }
 
   return (
@@ -107,15 +99,27 @@ function Conteudo({ titulo, papel, preferencias, atualizar, tentarDeNovo }: Prop
           etiqueta={preferencias.etiqueta.trim()}
           falando={nivel > 0.25}
         />
-        {erro && <AvisoErro erro={erro} aoTentar={tentarDeNovo} aoSoVoz={() => {
-          atualizar("soVoz", true);
-          tentarDeNovo();
-        }} />}
+        {erro && (
+          <AvisoErro
+            erro={erro}
+            aoTentar={tentarDeNovo}
+            aoSoVoz={() => {
+              atualizar("soVoz", true);
+              tentarDeNovo();
+            }}
+          />
+        )}
         <div className="flex flex-wrap items-center gap-3">
-          <Botao variante="secundario" onClick={() => atualizar("soVoz", !preferencias.soVoz)}>
-            {preferencias.soVoz ? <VideoCamera weight="fill" aria-hidden /> : <VideoCameraSlash weight="fill" aria-hidden />}
-            {preferencias.soVoz ? "Ligar câmera" : "Entrar só com voz"}
-          </Botao>
+          {!soDiretor && (
+            <Botao variante="secundario" onClick={() => atualizar("soVoz", !preferencias.soVoz)}>
+              {preferencias.soVoz ? (
+                <VideoCamera weight="fill" aria-hidden />
+              ) : (
+                <VideoCameraSlash weight="fill" aria-hidden />
+              )}
+              {preferencias.soVoz ? "Ligar câmera" : "Entrar só com voz"}
+            </Botao>
+          )}
           <p className="flex items-center gap-2 text-sm text-texto-suave">
             <Headphones weight="fill" className="size-5 shrink-0" aria-hidden />
             Use fones para evitar eco.
@@ -123,13 +127,17 @@ function Conteudo({ titulo, papel, preferencias, atualizar, tentarDeNovo }: Prop
         </div>
       </div>
 
-      <form onSubmit={entrar} className="flex flex-col gap-5" noValidate>
+      <form onSubmit={entrar} className="vidro flex flex-col gap-5 rounded-xl p-5 sm:p-6" noValidate>
         <div>
           <p className="text-sm text-texto-suave">
             {papel === "host" ? "Você vai dirigir" : "Você foi convidado para"}
           </p>
-          <h1 className="fonte-larga text-2xl font-extrabold text-balance">{titulo}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-balance">{titulo}</h1>
         </div>
+
+        {papel === "host" && (
+          <EscolhaModo modo={preferencias.modoHost} aoMudar={(m) => atualizar("modoHost", m)} />
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
           <CampoTexto
@@ -187,7 +195,7 @@ function Conteudo({ titulo, papel, preferencias, atualizar, tentarDeNovo }: Prop
           <TestarSom altoFalanteId={preferencias.altoFalanteId} />
         </div>
 
-        {!preferencias.soVoz && (
+        {!semCam && (
           <SeletorAparelho
             id="camera"
             tipo="videoinput"
@@ -200,7 +208,7 @@ function Conteudo({ titulo, papel, preferencias, atualizar, tentarDeNovo }: Prop
           />
         )}
 
-        <details className="group rounded-md border border-borda px-4 py-3">
+        <details className="group rounded-md border border-white/10 px-4 py-3">
           <summary className="cursor-pointer font-medium">Configurações</summary>
           <div className="mt-4 flex flex-col gap-4">
             <Selecao
@@ -208,7 +216,7 @@ function Conteudo({ titulo, papel, preferencias, atualizar, tentarDeNovo }: Prop
               rotulo="Qualidade da câmera"
               value={preferencias.resolucao}
               onChange={(e) => atualizar("resolucao", e.target.value as Resolucao)}
-              disabled={preferencias.soVoz}
+              disabled={semCam}
             >
               {RESOLUCOES.map((r) => (
                 <option key={r.valor} value={r.valor}>
@@ -234,11 +242,43 @@ function Conteudo({ titulo, papel, preferencias, atualizar, tentarDeNovo }: Prop
         </details>
 
         <MensagemErro>{erroNome}</MensagemErro>
-        <Botao type="submit" className="min-h-13 text-lg">
-          Entrar no Estúdio
+        <Botao type="submit" className="min-h-13 text-lg" disabled={entrando}>
+          {entrando ? "Entrando…" : "Entrar no estúdio"}
         </Botao>
       </form>
     </div>
+  );
+}
+
+const MODOS: { valor: ModoHost; rotulo: string; dica: string }[] = [
+  { valor: "apresentador", rotulo: "Diretor e apresentador", dica: "Com câmera e microfone; você pode aparecer na live." },
+  { valor: "diretor", rotulo: "Só diretor", dica: "Controla tudo sem aparecer. O microfone fica só para a equipe." },
+];
+
+function EscolhaModo({ modo, aoMudar }: { modo: ModoHost; aoMudar: (m: ModoHost) => void }) {
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="mb-1.5 text-sm font-medium">Como você vai participar?</legend>
+      {MODOS.map((m) => (
+        <label
+          key={m.valor}
+          className="flex cursor-pointer items-start gap-3 rounded-md border border-white/10 px-3 py-2.5 has-[:checked]:border-destaque has-[:checked]:bg-destaque/10"
+        >
+          <input
+            type="radio"
+            name="modo-host"
+            value={m.valor}
+            checked={modo === m.valor}
+            onChange={() => aoMudar(m.valor)}
+            className="mt-1 accent-destaque"
+          />
+          <span>
+            <span className="block font-medium">{m.rotulo}</span>
+            <span className="block text-sm text-texto-suave">{m.dica}</span>
+          </span>
+        </label>
+      ))}
+    </fieldset>
   );
 }
 
@@ -252,7 +292,7 @@ const TEXTO_ERRO: Record<ErroMidia, string> = {
 
 function AvisoErro({ erro, aoTentar, aoSoVoz }: { erro: ErroMidia; aoTentar: () => void; aoSoVoz: () => void }) {
   return (
-    <div role="alert" className="flex flex-col gap-3 rounded-lg bg-no-ar/10 px-4 py-3">
+    <div role="alert" className="flex flex-col gap-3 rounded-xl bg-no-ar/10 px-4 py-3 ring-1 ring-no-ar/20 ring-inset">
       <p className="flex items-start gap-3 text-no-ar">
         <WarningCircle weight="fill" className="mt-0.5 size-5 shrink-0" aria-hidden />
         {TEXTO_ERRO[erro]}

@@ -9,7 +9,7 @@ const COR_PONTO: Record<Tally, string> = {
 const COR_FUNDO: Record<Tally, string> = {
   "no-ar": "bg-no-ar/15 text-no-ar",
   ensaio: "bg-ensaio/15 text-ensaio",
-  neutro: "bg-superficie-2 text-texto-suave",
+  neutro: "bg-white/[0.06] text-texto-suave",
 };
 
 /** Etiqueta de status de uma transmissão, com a luz de tally correspondente. */

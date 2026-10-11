@@ -26,9 +26,9 @@ export function Dialogo({ aberto, aoFechar, titulo, children }: Props) {
       ref={ref}
       onClose={aoFechar}
       aria-labelledby="dialogo-titulo"
-      className="m-auto w-[calc(100%-2rem)] max-w-lg rounded-lg border border-borda bg-superficie p-0 text-texto backdrop:bg-black/60"
+      className="m-auto w-[calc(100%-2rem)] max-w-lg vidro-forte rounded-xl p-0 text-texto backdrop:bg-black/50 backdrop:backdrop-blur-sm"
     >
-      <div className="flex items-center justify-between border-b border-borda px-5 py-4">
+      <div className="flex items-center justify-between border-b border-vidro-borda px-5 py-4">
         <h2 id="dialogo-titulo" className="text-lg font-semibold">
           {titulo}
         </h2>
@@ -36,7 +36,7 @@ export function Dialogo({ aberto, aoFechar, titulo, children }: Props) {
           type="button"
           onClick={aoFechar}
           aria-label="Fechar"
-          className="rounded-md p-1.5 text-texto-suave hover:bg-superficie-2 hover:text-texto"
+          className="rounded-md p-1.5 text-texto-suave hover:bg-white/[0.06] hover:text-texto"
         >
           <X weight="bold" className="size-5" />
         </button>

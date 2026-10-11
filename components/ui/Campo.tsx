@@ -1,7 +1,7 @@
 import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 
 const ESTILO_CONTROLE =
-  "w-full rounded-md border border-borda bg-fundo px-3 py-2.5 text-texto placeholder:text-texto-suave/70 focus:border-destaque focus:outline-none";
+  "w-full rounded-md border border-white/10 bg-black/20 px-3 py-2.5 text-texto placeholder:text-texto-suave/70 focus:border-destaque focus:outline-none";
 
 type Rotulado = { rotulo: string; dica?: ReactNode };
 

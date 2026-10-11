@@ -15,7 +15,7 @@ export function MedidorNivel({ nivel, ativo }: { nivel: number; ativo: boolean }
       {Array.from({ length: SEGMENTOS }, (_, i) => {
         const aceso = i < acesos;
         const cor = i >= SEGMENTOS - 2 ? "bg-no-ar" : i >= SEGMENTOS - 5 ? "bg-ensaio" : "bg-pronto";
-        return <span key={i} className={`flex-1 rounded-[2px] ${aceso ? cor : "bg-superficie-2"}`} />;
+        return <span key={i} className={`flex-1 rounded-[2px] ${aceso ? cor : "bg-white/[0.07]"}`} />;
       })}
     </div>
   );

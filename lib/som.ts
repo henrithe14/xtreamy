@@ -64,7 +64,7 @@ let contexto: AudioContext | undefined;
 
 /**
  * No iOS/Safari o áudio só toca depois de um gesto do usuário. Chamado no clique de
- * "Entrar no Estúdio", deixa o áudio liberado para a sala (CLAUDE.md, seção 13).
+ * "Entrar no estúdio", deixa o áudio liberado para a sala (CLAUDE.md, seção 13).
  */
 export async function desbloquearAudio(): Promise<void> {
   try {

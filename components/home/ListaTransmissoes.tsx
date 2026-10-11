@@ -26,7 +26,7 @@ export async function ListaTransmissoes() {
     transmissoes = await listarTransmissoes();
   } catch {
     return (
-      <p className="flex items-center gap-3 rounded-lg bg-no-ar/10 px-4 py-4 text-no-ar">
+      <p className="flex items-center gap-3 rounded-xl bg-no-ar/10 px-4 py-4 text-no-ar ring-1 ring-no-ar/20 ring-inset">
         <WarningCircle weight="fill" className="size-5 shrink-0" aria-hidden />
         Não foi possível carregar suas transmissões. Recarregue a página para tentar de novo.
       </p>
@@ -35,7 +35,7 @@ export async function ListaTransmissoes() {
 
   if (transmissoes.length === 0) {
     return (
-      <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-borda px-6 py-10">
+      <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed border-white/15 bg-white/[0.02] px-6 py-10">
         <VideoCamera weight="fill" className="size-8 text-texto-suave" aria-hidden />
         <p className="font-semibold">Nenhuma transmissão ainda</p>
         <p className="max-w-[48ch] text-texto-suave">
@@ -46,7 +46,7 @@ export async function ListaTransmissoes() {
   }
 
   return (
-    <ul className="divide-y divide-borda overflow-hidden rounded-lg bg-superficie">
+    <ul className="vidro divide-y divide-white/[0.06] overflow-hidden rounded-xl">
       {transmissoes.map((t) => (
         <li key={t.id} className="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-center">
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -61,7 +61,7 @@ export async function ListaTransmissoes() {
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href={`/t/${t.id}/entrar`}
-              className="inline-flex min-h-11 items-center gap-2 rounded-md bg-destaque px-4 font-semibold text-destaque-texto transition-colors hover:bg-destaque-forte [&_svg]:size-5"
+              className="inline-flex min-h-11 items-center gap-2 rounded-md bg-destaque px-4 font-semibold text-destaque-texto shadow-[0_8px_24px_-12px_rgb(59_130_246/0.8)] transition-colors hover:bg-destaque-forte [&_svg]:size-5"
             >
               <ArrowSquareIn weight="fill" aria-hidden />
               Entrar no estúdio
@@ -80,12 +80,12 @@ export function ListaTransmissoesCarregando() {
     <ul
       aria-busy="true"
       aria-label="Carregando transmissões"
-      className="divide-y divide-borda overflow-hidden rounded-lg bg-superficie"
+      className="vidro divide-y divide-white/[0.06] overflow-hidden rounded-xl"
     >
       {[0, 1].map((i) => (
         <li key={i} className="flex flex-col gap-2 px-5 py-5">
-          <span className="h-5 w-56 max-w-full animate-pulse rounded bg-superficie-2" />
-          <span className="h-4 w-40 animate-pulse rounded bg-superficie-2" />
+          <span className="h-5 w-56 max-w-full animate-pulse rounded bg-white/[0.06]" />
+          <span className="h-4 w-40 animate-pulse rounded bg-white/[0.06]" />
         </li>
       ))}
     </ul>

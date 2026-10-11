@@ -1,28 +1,37 @@
 @import "tailwindcss";
 
 /*
-  Identidade própria (CLAUDE.md, seção 9). Tema escuro de sala de controle.
-  As cores de tally têm significado fixo em todo o app — nunca usar como enfeite:
-    no-ar    = está sendo transmitido agora
-    ensaio   = sala aberta, nada vai ao ar
-    pronto   = conectado / ok
-  O azul de destaque é só para ações (botões, links, foco) e é configurável.
+  Identidade Xtreamy (CLAUDE.md, seção 9). Sala de controle escura, com luz de estúdio
+  azul e verde ao fundo e painéis de vidro por cima.
+
+  Cores de tally têm significado fixo em todo o app — nunca usar como enfeite:
+    no-ar   = está sendo transmitido agora
+    ensaio  = sala aberta / intervalo, nada vai ao ar
+    pronto  = conectado / ok (é o verde da marca)
+  Azul = ações (botões, links, foco). O degradê azul→verde é exclusivo do logo.
 */
 :root {
-  --fundo: #0d1220;
-  --superficie: #151c2c;
-  --superficie-2: #1d2638;
-  --borda: #2a3550;
-  --texto: #e8ecf4;
-  --texto-suave: #93a0b8;
+  --fundo: #0a1020;
+  --superficie: #121a2c;
+  --superficie-2: #1a2438;
+  --borda: #26324a;
+  --texto: #e9edf5;
+  --texto-suave: #94a0b8;
 
   --destaque: #3b82f6;
   --destaque-forte: #2f6fe0;
   --destaque-texto: #ffffff;
+  --marca-verde: #10b981;
 
   --no-ar: #f0453a;
   --ensaio: #f2b33d;
-  --pronto: #2fbf71;
+  --pronto: #10b981;
+
+  /* Vidro */
+  --vidro: rgb(255 255 255 / 0.045);
+  --vidro-forte: rgb(255 255 255 / 0.07);
+  --vidro-borda: rgb(255 255 255 / 0.09);
+  --vidro-brilho: rgb(255 255 255 / 0.07);
 }
 
 @theme inline {
@@ -35,13 +44,15 @@
   --color-destaque: var(--destaque);
   --color-destaque-forte: var(--destaque-forte);
   --color-destaque-texto: var(--destaque-texto);
+  --color-marca-verde: var(--marca-verde);
   --color-no-ar: var(--no-ar);
   --color-ensaio: var(--ensaio);
   --color-pronto: var(--pronto);
+  --color-vidro-borda: var(--vidro-borda);
 
   --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
   --radius-md: 0.5rem;
-  --radius-lg: 0.875rem;
+  --radius-lg: 0.75rem;
 }
 
 @layer base {
@@ -50,10 +61,15 @@
   }
 
   body {
-    background: var(--fundo);
     color: var(--texto);
     font-family: var(--font-sans);
     font-variant-numeric: tabular-nums;
+    /* Luz de estúdio: azul no alto à esquerda, verde embaixo à direita. Fixa, sem movimento. */
+    background:
+      radial-gradient(60rem 40rem at -10% -20%, rgb(59 130 246 / 0.22), transparent 60%),
+      radial-gradient(50rem 36rem at 110% 115%, rgb(16 185 129 / 0.18), transparent 60%),
+      var(--fundo);
+    background-attachment: fixed;
   }
 
   :focus-visible {
@@ -62,10 +78,30 @@
   }
 }
 
-/* Archivo em largura expandida: marca e títulos, com cara de letreiro de transmissão. */
+/* Painel de vidro: translúcido, desfoca o que está atrás, com um fio de luz no topo. */
+@utility vidro {
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 var(--vidro-brilho),
+    0 24px 48px -24px rgb(0 0 0 / 0.55);
+}
+
+/* Vidro mais denso, para barras fixas e diálogos (texto sempre legível). */
+@utility vidro-forte {
+  background: rgb(14 21 38 / 0.72);
+  border: 1px solid var(--vidro-borda);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  box-shadow: inset 0 1px 0 var(--vidro-brilho);
+}
+
+/* Archivo semi-expandida: reservada ao nome Xtreamy. */
 @utility fonte-larga {
-  font-stretch: 118%;
-  font-variation-settings: "wdth" 118;
+  font-stretch: 112%;
+  font-variation-settings: "wdth" 112;
   letter-spacing: -0.01em;
 }
 

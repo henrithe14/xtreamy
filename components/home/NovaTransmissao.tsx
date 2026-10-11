@@ -73,7 +73,7 @@ function FormNovaTransmissao({ aoCriar }: { aoCriar: () => void }) {
         {OPCOES_PRIVACIDADE.map((opcao, i) => (
           <label
             key={opcao.valor}
-            className="flex cursor-pointer items-start gap-3 rounded-md border border-borda px-3 py-2.5 has-[:checked]:border-destaque has-[:checked]:bg-destaque/10"
+            className="flex cursor-pointer items-start gap-3 rounded-md border border-white/10 px-3 py-2.5 has-[:checked]:border-destaque has-[:checked]:bg-destaque/10"
           >
             <input
               type="radio"
@@ -90,7 +90,7 @@ function FormNovaTransmissao({ aoCriar }: { aoCriar: () => void }) {
         ))}
       </fieldset>
 
-      <p className="rounded-md bg-superficie-2 px-3 py-2.5 text-sm text-texto-suave">
+      <p className="rounded-md bg-white/[0.04] px-3 py-2.5 text-sm text-texto-suave">
         O canal do YouTube é escolhido depois, antes de ir ao vivo.
       </p>
 

@@ -15,7 +15,7 @@ export function Selecao({ id, rotulo, icone, className = "", children, ...props 
       </label>
       <select
         id={id}
-        className={`min-h-11 w-full min-w-0 truncate rounded-md border border-borda bg-fundo px-3 text-texto focus:border-destaque focus:outline-none disabled:opacity-50 ${className}`}
+        className={`min-h-11 w-full min-w-0 truncate rounded-md border border-white/10 bg-black/20 px-3 text-texto focus:border-destaque focus:outline-none disabled:opacity-50 ${className}`}
         {...props}
       >
         {children}
@@ -50,7 +50,7 @@ export function Interruptor({ id, rotulo, dica, ligado, aoMudar }: PropsInterrup
       />
       <span
         aria-hidden
-        className="relative mt-0.5 h-6 w-11 shrink-0 rounded-full bg-borda transition-colors peer-checked:bg-destaque peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-destaque after:absolute after:top-0.5 after:left-0.5 after:size-5 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-5"
+        className="relative mt-0.5 h-6 w-11 shrink-0 rounded-full bg-white/15 transition-colors peer-checked:bg-destaque peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-destaque after:absolute after:top-0.5 after:left-0.5 after:size-5 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-5"
       />
     </label>
   );

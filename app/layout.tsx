@@ -9,8 +9,8 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
-  title: "Estúdio",
-  description: "Estúdio de transmissões ao vivo no navegador.",
+  title: "Xtreamy",
+  description: "Estúdio de transmissões ao vivo no navegador, com saída para o YouTube.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

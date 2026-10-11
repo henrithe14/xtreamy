@@ -29,11 +29,11 @@ export function PreviaCamera({ video, carregando, nome, etiqueta, falando }: Pro
   }, [video]);
 
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-superficie-2">
+    <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-superficie-2 ring-1 ring-white/10">
       {video ? (
         <video ref={ref} muted playsInline autoPlay className="size-full -scale-x-100 object-cover" />
       ) : (
-        <CartaoSoVoz nome={nome}falando={falando} className="absolute inset-0" />
+        <CartaoSoVoz nome={nome} falando={falando} className="absolute inset-0" />
       )}
 
       {carregando && (
@@ -43,7 +43,7 @@ export function PreviaCamera({ video, carregando, nome, etiqueta, falando }: Pro
       )}
 
       {nome && (
-        <div className="absolute bottom-[6%] left-[4%] max-w-[80%] rounded-md bg-fundo/85 px-3 py-1.5 backdrop-blur-sm">
+        <div className="absolute bottom-[6%] left-[4%] max-w-[80%] rounded-md bg-black/45 px-3 py-1.5 ring-1 ring-white/10 backdrop-blur-md">
           <p className="truncate font-semibold leading-tight">{nome}</p>
           {etiqueta && <p className="truncate text-sm leading-tight text-texto-suave">{etiqueta}</p>}
         </div>

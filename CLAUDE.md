@@ -1,6 +1,6 @@
-# Estúdio — plataforma própria de transmissão ao vivo
+# Xtreamy — plataforma própria de transmissão ao vivo
 
-> Nome provisório. Este arquivo é a fonte da verdade do projeto. Leia inteiro antes de qualquer tarefa.
+> Este arquivo é a fonte da verdade do projeto. Leia inteiro antes de qualquer tarefa. O produto se chama **Xtreamy**; "estúdio" é o nome da sala ("Entrar no estúdio").
 
 ## 1. Visão
 
@@ -105,15 +105,18 @@ Migrações SQL ficam em `supabase/migrations/` e são aplicadas no SQL Editor d
 
 A permissão vem do **token** gerado no servidor, nunca de parâmetro de URL confiado no cliente.
 
+Implementação (Etapa 3): `lib/acesso.ts → resolverAcesso(id, codigo)` decide o papel (dono logado = host; código válido = convidado) e é usado pelas páginas e por `POST /api/token`. Sala do LiveKit = `t-{transmissaoId}`. Identity: `host-{userId}` ou `conv-{aleatório}` guardado em cookie httpOnly por transmissão (recarregar volta como a mesma pessoa). Papel e etiqueta vão no metadata do token (`lib/participante.ts`), que o participante não pode alterar.
+
 ### Acesso: login só para o criador
 - **Login (Supabase Auth) é exigido apenas para o criador da live**: Home, Destinos, Nova Transmissão e entrar no estúdio como host.
 - **Convidados nunca fazem login nem criam conta.** Entram só pelo **link do estúdio**, passam pela tela "Entrar no Estúdio" (nome obrigatório, etiqueta opcional) e recebem papel de convidado.
 - O link de convite carrega um **código secreto aleatório** (ex.: `/t/[id]/entrar?c=XXXX`), validado no servidor antes de gerar o token LiveKit. Sem código válido, não há entrada.
+- **O link de convite é sempre de convidado**: com `?c=` o papel é convidado mesmo que o dono esteja logado (assim ele pode testar como convidado sem derrubar a própria sessão).
 - O host pode **gerar um novo link** (invalida o anterior) e **remover** convidados da sala.
-- O próprio host, quando logado e dono da transmissão, entra com papel de host pelo mesmo fluxo, sem precisar do código.
+- O próprio host, quando logado e dono da transmissão, entra com papel de host pelo "Entrar no estúdio" da Home (sem código).
 
 ### Modo diretor
-O host pode alternar entre:
+Na pré-entrada o host escolhe "Diretor e apresentador" ou "Só diretor" (`preferencias.modoHost`, vai no metadata como `soDiretor`). A troca durante a live (menu de cima) entra na Etapa 7. O host pode alternar entre:
 - **Modo apresentador:** está na sala com câmera/mic e pode ir ao palco.
 - **Modo diretor:** só controla. Não publica câmera, não aparece e não é ouvido na live, mas ouve tudo e fala com a equipe/ponto. Interface com os controles em destaque.
 
@@ -209,16 +212,19 @@ Transições suaves (fade/slide de 200–300 ms).
 
 ## 9. Interface
 
-Identidade **própria**, de sala de controle. Nada de logo, nomes ou textos de outros produtos.
+Identidade **Xtreamy**: sala de controle escura, profissional e sóbria, com luz de estúdio azul e verde ao fundo e painéis de vidro. Nada de logo, nomes ou textos de outros produtos.
 
-- **Logo:** quadro 16:9 com marcas de área segura e um ponto central que é uma **luz de tally**: azul em repouso, vermelho (pulsando) quando a live está no ar. Componente `components/ui/Marca.tsx`; favicon `app/icon.svg`.
-- **Cores** (tokens em `app/globals.css`): fundo `#0D1220`, superfícies `#151C2C` / `#1D2638`, borda `#2A3550`, texto `#E8ECF4` / `#93A0B8`.
+- **Logo:** quadro 16:9 com marcas de área segura e um ponto central que é uma **luz de tally**: degradê azul→verde em repouso, vermelho (pulsando) quando a live está no ar. `components/ui/Marca.tsx` (wordmark "Xtreamy" em Archivo semi-expandida); favicon `app/icon.svg`. O degradê azul→verde é **exclusivo do logo**.
+- **Cores** (tokens em `app/globals.css`): fundo `#0A1020` com dois brilhos fixos (azul `#3B82F6` no alto à esquerda, verde `#10B981` embaixo à direita); texto `#E9EDF5` / `#94A0B8`.
   - **Ação:** azul `#3B82F6` (configurável), só para botões, links e foco.
-  - **Tally (significado fixo, nunca decorativo):** no ar `#F0453A`, ensaio/intervalo `#F2B33D`, pronto/ok `#2FBF71`. Mapeamento de status em `lib/transmissao.ts`, etiqueta em `components/ui/StatusTally.tsx`.
-- **Tipografia:** Archivo (uma família). Largura expandida (`fonte-larga`) na marca e em títulos; largura normal no resto; números tabulares para tempos.
+  - **Marca:** verde-esmeralda `#10B981`, que também é a cor de "pronto/ok".
+  - **Tally (significado fixo, nunca decorativo):** no ar `#F0453A`, ensaio/intervalo `#F2B33D`, pronto `#10B981`. Mapeamento em `lib/transmissao.ts`, etiqueta em `components/ui/StatusTally.tsx`.
+- **Vidro:** utilitários `vidro` (painéis: branco 4,5%, borda branca 9%, blur 20px, fio de luz no topo) e `vidro-forte` (barras fixas e diálogos). Controles secundários: `bg-white/[0.06]` + `ring-white/10`. Campos: `bg-black/20` + `border-white/10`.
+- **Tipografia:** Archivo. Títulos em `font-semibold tracking-tight`, tamanhos contidos (nada de títulos gigantes); largura expandida (`fonte-larga`) só no nome Xtreamy. Números tabulares para tempos.
 - **Ícones:** Phosphor, peso `fill` (flat). Em Server Components importar de `@phosphor-icons/react/ssr`.
-- **Marcas de canto** (área segura) só em volta do que vai ao ar (prévia/monitor), nunca como enfeite.
-- Cantos arredondados médios; foco visível; respeitar `prefers-reduced-motion`.
+- **Marcas de canto** (área segura) só em volta do que vai ao ar.
+- **Texto:** frases simples em português, sem travessões decorativos, sem caixa-alta em rótulos.
+- Cantos: `rounded-md` em controles, `rounded-xl` em painéis; foco visível; respeitar `prefers-reduced-motion`.
 
 ### 9.1 Home (logado)
 - Botão principal **Nova Transmissão** (abre o formulário da 8.1).

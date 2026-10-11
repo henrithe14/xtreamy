@@ -3,9 +3,10 @@ import type { ButtonHTMLAttributes } from "react";
 type Variante = "primario" | "secundario" | "fantasma" | "no-ar";
 
 const VARIANTES: Record<Variante, string> = {
-  primario: "bg-destaque text-destaque-texto hover:bg-destaque-forte",
-  secundario: "bg-superficie-2 text-texto hover:bg-borda",
-  fantasma: "text-texto-suave hover:bg-superficie-2 hover:text-texto",
+  primario:
+    "bg-destaque text-destaque-texto shadow-[0_8px_24px_-12px_rgb(59_130_246/0.8)] hover:bg-destaque-forte",
+  secundario: "bg-white/[0.06] text-texto ring-1 ring-white/10 ring-inset hover:bg-white/10",
+  fantasma: "text-texto-suave hover:bg-white/[0.06] hover:text-texto",
   "no-ar": "bg-no-ar text-white hover:brightness-110",
 };
 

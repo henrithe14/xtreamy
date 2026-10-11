@@ -1,11 +1,15 @@
 // Escolhas da pré-entrada, lembradas neste navegador (só conveniência: nada aqui é segredo).
 
+import type { ModoHost } from "@/lib/participante";
+
 export type Resolucao = "h540" | "h720" | "h1080";
 
 export type Preferencias = {
   nome: string;
   etiqueta: string;
   soVoz: boolean;
+  /** Só vale para o dono da transmissão. */
+  modoHost: ModoHost;
   cameraId: string;
   microfoneId: string;
   altoFalanteId: string;
@@ -18,6 +22,7 @@ export const PREFERENCIAS_PADRAO: Preferencias = {
   nome: "",
   etiqueta: "",
   soVoz: false,
+  modoHost: "apresentador",
   cameraId: "",
   microfoneId: "",
   altoFalanteId: "",
@@ -39,6 +44,11 @@ export function carregarPreferencias(): Preferencias {
   } catch {
     return PREFERENCIAS_PADRAO;
   }
+}
+
+/** Sem câmera: escolheu "só voz" ou é o diretor que só controla. */
+export function semCamera(p: Preferencias, papel: "host" | "convidado"): boolean {
+  return p.soVoz || (papel === "host" && p.modoHost === "diretor");
 }
 
 export function salvarPreferencias(preferencias: Preferencias) {
