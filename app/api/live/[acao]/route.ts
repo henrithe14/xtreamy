@@ -6,6 +6,8 @@ import { criarClienteServidor } from "@/lib/supabase/servidor";
 import type { StatusTransmissao } from "@/lib/transmissao";
 import { obterTransmissaoDoUsuario, type Transmissao } from "@/lib/transmissoes";
 import { enderecoRtmp, ErroYouTube, statusStream, transicionar } from "@/lib/youtube";
+import { ehVideo, urlPublica } from "@/lib/ativos";
+import type { Midia } from "@/lib/cena";
 
 // Iniciar espera o YouTube receber o sinal (até ~1 minuto).
 export const maxDuration = 120;
@@ -51,19 +53,36 @@ async function salvarStatus(id: string, status: StatusTransmissao, extra: Partia
   await supabase.from("transmissoes").update({ status, ...extra }).eq("id", id);
 }
 
+/** Mídia "Volto logo" mais recente do diretor, em loop, para o intervalo (ou null). */
+async function midiaVoltoLogo(): Promise<Midia | null> {
+  const supabase = await criarClienteServidor();
+  const { data } = await supabase
+    .from("ativos")
+    .select("caminho, mime")
+    .eq("tipo", "midia")
+    .eq("metadados->>categoria", "volto-logo")
+    .order("criado_em", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  return { url: urlPublica(data.caminho), video: ehVideo(data.mime), loop: true, inicioEm: Date.now() };
+}
+
 async function executar(acao: Acao, t: Transmissao, userId: string) {
   const noAr = t.status === "ao_vivo" || t.status === "intervalo";
 
   if (acao === "intervalo") {
     if (t.status !== "ao_vivo") throw new ErroLive("A live não está no ar.");
-    await alterarCenaNoServidor(t.id, () => ({ status: "intervalo" }));
+    // Com mídia "Volto logo" enviada, ela toca em tela cheia; sem, a tela simples da marca.
+    const midia = await midiaVoltoLogo().catch(() => null);
+    await alterarCenaNoServidor(t.id, (c) => ({ status: "intervalo", midia: midia ?? c.midia }));
     await salvarStatus(t.id, "intervalo");
     return;
   }
 
   if (acao === "retomar") {
     if (t.status !== "intervalo") throw new ErroLive("A live não está em intervalo.");
-    await alterarCenaNoServidor(t.id, () => ({ status: "ao_vivo" }));
+    await alterarCenaNoServidor(t.id, () => ({ status: "ao_vivo", midia: null }));
     await salvarStatus(t.id, "ao_vivo");
     return;
   }

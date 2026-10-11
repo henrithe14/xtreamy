@@ -40,6 +40,18 @@ type LinhaDestinoCompleta = LinhaDestino & { refresh_token_cifrado: string };
 export type LinhaBanner = { id: string; user_id: string; texto: string; estilo: "faixa" | "letreiro"; criado_em: string };
 export type LinhaEstilo = { id: string; user_id: string; nome: string; definicao: unknown; criado_em: string };
 
+export type LinhaAtivo = {
+  id: string;
+  user_id: string;
+  tipo: "logo" | "overlay" | "fundo" | "midia" | "vinheta" | "musica" | "efeito";
+  nome: string;
+  caminho: string;
+  mime: string;
+  tamanho: number;
+  metadados: unknown;
+  criado_em: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -60,6 +72,12 @@ export type Database = {
         Row: LinhaEstilo;
         Insert: Pick<LinhaEstilo, "nome" | "definicao"> & Partial<Pick<LinhaEstilo, "user_id">>;
         Update: Partial<LinhaEstilo>;
+        Relationships: [];
+      };
+      ativos: {
+        Row: LinhaAtivo;
+        Insert: Pick<LinhaAtivo, "tipo" | "nome" | "caminho" | "mime" | "tamanho"> & Partial<Pick<LinhaAtivo, "metadados" | "user_id">>;
+        Update: Partial<LinhaAtivo>;
         Relationships: [];
       };
       destinos: {

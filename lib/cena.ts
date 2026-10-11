@@ -4,6 +4,7 @@
 
 import { LAYOUTS, LAYOUT_PADRAO } from "@/lib/layouts";
 import { ESTILO_PADRAO, validarBanner, validarEstilo, type Banner, type Estilo } from "@/lib/estilo";
+import { urlDeAtivo } from "@/lib/ativos";
 
 export type StatusCena = "ensaio" | "ao_vivo" | "intervalo" | "encerrada";
 
@@ -23,6 +24,13 @@ export type ComentarioDestacado = {
 
 export const LIMITES_COMENTARIO = { autor: 80, texto: 300 } as const;
 
+export type PosicaoLogo = "se" | "sd" | "ie" | "id";
+export type Logo = { url: string; posicao: PosicaoLogo };
+export type Fundo = { tipo: "cor"; valor: string } | { tipo: "imagem" | "video"; valor: string };
+/** Mídia em tela cheia. inicioEm (ms) sincroniza o vídeo entre a prévia e a live. */
+export type Midia = { url: string; video: boolean; loop: boolean; inicioEm: number };
+export type Vinheta = { url: string; inicioEm: number };
+
 export type Cena = {
   /** Cresce a cada alteração; serve para descartar respostas antigas. */
   versao: number;
@@ -38,6 +46,12 @@ export type Cena = {
   /** Identities cuja etiqueta (nome) não aparece na live. */
   etiquetasOcultas: string[];
   banner: Banner | null;
+  logo: Logo | null;
+  overlay: string | null;
+  /** null = degradê das cores da marca. */
+  fundo: Fundo | null;
+  midia: Midia | null;
+  vinheta: Vinheta | null;
 };
 
 export const CENA_INICIAL: Cena = {
@@ -51,6 +65,11 @@ export const CENA_INICIAL: Cena = {
   estilo: ESTILO_PADRAO,
   etiquetasOcultas: [],
   banner: null,
+  logo: null,
+  overlay: null,
+  fundo: null,
+  midia: null,
+  vinheta: null,
 };
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -76,6 +95,56 @@ function validarComentario(dado: unknown): ComentarioDestacado | null | "invalid
   if (c.origem !== "youtube" && c.origem !== "interno") return "invalido";
   const avatar = typeof c.avatar === "string" && c.avatar.length <= 500 && AVATAR_PERMITIDO.test(c.avatar) ? c.avatar : null;
   return { autor: c.autor.trim(), texto: c.texto.trim(), origem: c.origem, avatar };
+}
+
+const POSICOES: PosicaoLogo[] = ["se", "sd", "ie", "id"];
+const tempo = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : null);
+
+/** Campos de ativos: null quando ausentes; "invalido" quando presentes e errados. */
+function validarAtivos(c: Record<string, unknown>) {
+  const invalido = "invalido" as const;
+
+  let logo: Logo | null = null;
+  if (c.logo != null) {
+    const l = c.logo as Partial<Logo>;
+    const url = urlDeAtivo(l.url);
+    if (!url || !POSICOES.includes(l.posicao as PosicaoLogo)) return invalido;
+    logo = { url, posicao: l.posicao as PosicaoLogo };
+  }
+
+  let overlay: string | null = null;
+  if (c.overlay != null) {
+    overlay = urlDeAtivo(c.overlay);
+    if (!overlay) return invalido;
+  }
+
+  let fundo: Fundo | null = null;
+  if (c.fundo != null) {
+    const f = c.fundo as { tipo?: unknown; valor?: unknown };
+    if (f.tipo === "cor" && typeof f.valor === "string" && HEX.test(f.valor)) fundo = { tipo: "cor", valor: f.valor };
+    else if ((f.tipo === "imagem" || f.tipo === "video") && urlDeAtivo(f.valor)) fundo = { tipo: f.tipo, valor: f.valor as string };
+    else return invalido;
+  }
+
+  let midia: Midia | null = null;
+  if (c.midia != null) {
+    const m = c.midia as Partial<Midia>;
+    const url = urlDeAtivo(m.url);
+    const inicioEm = tempo(m.inicioEm);
+    if (!url || inicioEm === null || typeof m.video !== "boolean" || typeof m.loop !== "boolean") return invalido;
+    midia = { url, video: m.video, loop: m.loop, inicioEm };
+  }
+
+  let vinheta: Vinheta | null = null;
+  if (c.vinheta != null) {
+    const v = c.vinheta as Partial<Vinheta>;
+    const url = urlDeAtivo(v.url);
+    const inicioEm = tempo(v.inicioEm);
+    if (!url || inicioEm === null) return invalido;
+    vinheta = { url, inicioEm };
+  }
+
+  return { logo, overlay, fundo, midia, vinheta };
 }
 
 export const MAX_NO_PALCO = 10;
@@ -104,6 +173,8 @@ export function validarCena(dado: unknown): Cena | null {
   const etiquetasOcultas = c.etiquetasOcultas ?? [];
   if (!Array.isArray(etiquetasOcultas) || etiquetasOcultas.length > 20) return null;
   if (!etiquetasOcultas.every((id) => typeof id === "string" && id.length <= 64)) return null;
+  const ativos = validarAtivos(c as Record<string, unknown>);
+  if (ativos === "invalido") return null;
   return {
     versao: c.versao,
     layoutId: c.layoutId,
@@ -115,6 +186,7 @@ export function validarCena(dado: unknown): Cena | null {
     estilo,
     etiquetasOcultas,
     banner,
+    ...ativos,
   };
 }
 

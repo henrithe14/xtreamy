@@ -43,6 +43,7 @@ import { SeletorLayout } from "@/components/estudio/SeletorLayout";
 import { ChatEstudio, PainelComentarios } from "@/components/estudio/PainelComentarios";
 import { PainelEstilo } from "@/components/estudio/PainelEstilo";
 import { PainelBanners } from "@/components/estudio/PainelBanners";
+import { PainelMidia } from "@/components/estudio/PainelMidia";
 import { ControlesLive, Cronometro } from "@/components/estudio/ControlesLive";
 import { StatusTally } from "@/components/ui/StatusTally";
 
@@ -115,7 +116,7 @@ export function Sala({
 /** Diretor: prévia + disposições à esquerda, pessoas (palco/bastidor) à direita. */
 function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temChat: boolean }) {
   const { cena, alterar, erro } = useControleCena(transmissaoId);
-  const [abaLateral, setAbaLateral] = useState<"pessoas" | "comentarios" | "estilo" | "banners">("pessoas");
+  const [abaLateral, setAbaLateral] = useState<"pessoas" | "comentarios" | "estilo" | "banners" | "midia">("pessoas");
 
   async function editarEtiqueta(identity: string, etiqueta: string) {
     await fetch("/api/participante", {
@@ -152,7 +153,15 @@ function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temC
             {ponto.erro ?? mudo.erro}
           </p>
         )}
-        <Previa cena={cena} urlSaida={`/stage?t=${transmissaoId}`} />
+        <Previa
+          cena={cena}
+          urlSaida={`/stage?t=${transmissaoId}`}
+          // A vinheta sai da cena quando termina (só o diretor grava a cena).
+          aoTerminarVinheta={() => {
+            const fim = cena.vinheta;
+            if (fim) alterar((c) => ({ ...c, vinheta: c.vinheta?.inicioEm === fim.inicioEm ? null : c.vinheta }));
+          }}
+        />
         {erro && (
           <p role="alert" className="text-sm text-no-ar">
             {erro}
@@ -172,6 +181,7 @@ function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temC
               ["comentarios", "Comentários"],
               ["estilo", "Estilo"],
               ["banners", "Banners"],
+              ["midia", "Mídia"],
             ] as const
           ).map(([id, rotulo]) => (
             <button
@@ -180,7 +190,7 @@ function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temC
               role="tab"
               aria-selected={abaLateral === id}
               onClick={() => setAbaLateral(id)}
-              className={`flex-1 rounded-lg px-2 py-2 text-sm font-semibold transition-colors ${
+              className={`flex-1 rounded-lg px-1.5 py-2 text-xs font-semibold transition-colors sm:text-sm ${
                 abaLateral === id ? "bg-white/10 text-texto" : "text-texto-suave hover:text-texto"
               }`}
             >
@@ -227,6 +237,9 @@ function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temC
         </section>
         <section hidden={abaLateral !== "banners"} aria-label="Banners" className="vidro rounded-xl p-3 sm:p-4">
           <PainelBanners cena={cena} alterar={alterar} />
+        </section>
+        <section hidden={abaLateral !== "midia"} aria-label="Mídia" className="vidro rounded-xl p-3 sm:p-4">
+          <PainelMidia cena={cena} alterar={alterar} />
         </section>
       </div>
     </main>

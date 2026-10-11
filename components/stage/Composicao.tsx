@@ -15,6 +15,7 @@ import { Track, type Participant } from "livekit-client";
 import type { Cena, CoresMarca } from "@/lib/cena";
 import { urlFonte, type Estilo } from "@/lib/estilo";
 import { BannerLive, CartaoComentario, EtiquetaNome } from "@/components/stage/Artes";
+import { FundoEnviado, LogoLive, MidiaTelaCheia, OverlayLive, VinhetaLive } from "@/components/stage/Midias";
 import { obterLayout, type Slot } from "@/lib/layouts";
 import { ATRIBUTO_AUDIO_PRIVADO, lerMetadados } from "@/lib/participante";
 import { CartaoSoVoz } from "@/components/ui/CartaoSoVoz";
@@ -39,10 +40,14 @@ type Props = {
   cena: Cena;
   /** Prévia no estúdio: mostra aviso quando o palco está vazio. No /stage, nada. */
   previa?: boolean;
+  /** Som de mídias e vinhetas: só no /stage (a live). Na prévia o vídeo fica mudo. */
+  comSom?: boolean;
+  /** Chamado quando a vinheta acaba (o diretor tira a vinheta da cena). */
+  aoTerminarVinheta?: () => void;
 };
 
 /** Quadro 16:9 da live. Tamanhos de texto em cqw: escala igual na prévia e em 1920×1080. */
-export function Composicao({ cena, previa = false }: Props) {
+export function Composicao({ cena, previa = false, comSom = false, aoTerminarVinheta }: Props) {
   const palco = usePalcoVisivel(cena);
   const slots = obterLayout(cena.layoutId).slots(palco.length);
   const cameras = useTracks([Track.Source.Camera], { onlySubscribed: false });
@@ -54,7 +59,8 @@ export function Composicao({ cena, previa = false }: Props) {
     >
       {/* Fonte das artes (Google Fonts). O React coloca o <link> no <head>. */}
       <link rel="stylesheet" href={urlFonte(cena.estilo.fonte)} precedence="default" />
-      <FundoMarca cores={cena.cores} />
+      {/* Camadas de baixo para cima (seção 8.4). */}
+      {cena.fundo ? <FundoEnviado fundo={cena.fundo} /> : <FundoMarca cores={cena.cores} />}
 
       {palco.map((p, i) => (
         <SlotPessoa
@@ -82,11 +88,26 @@ export function Composicao({ cena, previa = false }: Props) {
         <BannerLive key={`${cena.banner.estilo}|${cena.banner.texto}`} banner={cena.banner} tema={cena.estilo.tema} cores={cena.cores} />
       )}
 
-      {(cena.status === "intervalo" || cena.status === "encerrada") && (
+      {cena.logo && <LogoLive logo={cena.logo} />}
+      {cena.overlay && <OverlayLive url={cena.overlay} />}
+
+      {cena.midia && <MidiaTelaCheia key={`${cena.midia.url}|${cena.midia.inicioEm}`} midia={cena.midia} comSom={comSom} />}
+
+      {/* Intervalo sem mídia "Volto logo" enviada: tela simples da marca. */}
+      {((cena.status === "intervalo" && !cena.midia) || cena.status === "encerrada") && (
         <TelaCheiaMarca cores={cena.cores} texto={cena.status === "intervalo" ? "Já voltamos" : "Transmissão encerrada"} />
       )}
 
-      {previa && palco.length === 0 && cena.status !== "intervalo" && cena.status !== "encerrada" && (
+      {cena.vinheta && (
+        <VinhetaLive
+          key={`${cena.vinheta.url}|${cena.vinheta.inicioEm}`}
+          vinheta={cena.vinheta}
+          comSom={comSom}
+          aoTerminar={aoTerminarVinheta}
+        />
+      )}
+
+      {previa && palco.length === 0 && !cena.midia && cena.status !== "intervalo" && cena.status !== "encerrada" && (
         <p className="absolute inset-0 flex items-center justify-center text-[2.2cqw] text-texto-suave">
           Ninguém no palco. Escolha quem aparece em Pessoas.
         </p>

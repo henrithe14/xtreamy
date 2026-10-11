@@ -90,7 +90,7 @@ Tabelas iniciais (com RLS: cada usuário só vê o que é seu):
 - `cortes`: id, transmissao_id, inicio_seg, fim_seg (segundos desde o início da live no YouTube), nome, nota, criado_por, criado_em.
 - `banners`, `enquetes`, `roteiros` (teleprompter): criados nas etapas correspondentes.
 
-Arquivos ficam no **Supabase Storage**, num bucket por tipo de ativo.
+Arquivos ficam no **Supabase Storage**. **Decisão (Etapa 10):** um bucket público único `ativos`, com pastas `{user_id}/{tipo}/{aleatório}.{ext}` (em vez de um bucket por tipo: as permissões ficam mais simples). É público porque o Egress carrega os arquivos sem login; só o dono envia/apaga (políticas por pasta). Limite de 50 MB por arquivo (plano gratuito).
 
 Migrações SQL ficam em `supabase/migrations/` e são aplicadas no SQL Editor do Supabase. Os tipos do banco ficam em `lib/supabase/tipos.ts` (manter em sincronia). A tabela `destinos` e a referência `transmissoes.destino_id → destinos` entram na Etapa 5.
 
@@ -285,6 +285,7 @@ Convidados veem a mesma estrutura **sem** o menu lateral de produção, sem as d
 3. **Ativos de mídia:**
    - *Logotipo* (com posição), *Overlay* (PNG transparente por cima de tudo), *Vinhetas* (vídeo curto com áudio, tocado por cima e removido ao terminar).
    - *Mídias* organizadas por momento: **Iniciar**, **Volto logo**, **Finalizar** e outras. Mostrar, tocar/pausar, tela cheia.
+   - Implementação (Etapa 10): o navegador envia direto ao Storage e o servidor registra em `ativos` (`lib/acoes/ativos.ts` confere pasta, tipo e tamanho). Na cena: `logo` (4 cantos), `overlay`, `fundo` (cor/imagem/vídeo; null = degradê da marca), `midia` (sempre em tela cheia; `inicioEm` sincroniza o vídeo entre prévia e live; loop só em "Volto logo") e `vinheta` (toca uma vez; a prévia do diretor tira da cena ao terminar). A cena só aceita URLs do nosso bucket (`urlDeAtivo`). Som de mídia/vinheta só no `/stage`; na prévia o vídeo fica mudo. O **Intervalo** põe a mídia "Volto logo" mais recente em loop (sem ela, "Já voltamos"); **Retomar** tira. Ainda não implementado: mídia em janela (fora de tela cheia), pausar/retomar mídia no meio e pré-carregar as mídias no `/stage` antes de mostrar.
 4. **Plano de fundo:** cor, imagem ou vídeo em loop. **Sem fundo enviado, o padrão é um degradê gerado das cores da marca** (`FundoMarca`: primária no alto à esquerda, secundária embaixo à direita, base escura tingida pela primária).
 5. **Música de fundo:** playlist dos ativos de música, play/pausa/próxima, volume, ducking liga/desliga.
 6. **Efeitos sonoros:** grade de botões (soundboard) para disparo único; volume geral.
@@ -375,7 +376,8 @@ Etapas implementadas e publicadas, mas cujo critério de "Pronto" ainda não foi
 - **Etapa 7 (inteira):** "mudo para a live" (pela barra e pelo diretor; a equipe ouve, a live não), ponto (só o alvo ouve, aparece "Diretor falando com você", o microfone principal do diretor fica mudo) e alternar "Só diretor" durante a live. Critério: **assistir à gravação no YouTube** e confirmar que nada privado vazou.
 - **Etapa 8 (inteira):** chat do YouTube no painel (aba Comentários), "Mostrar na tela"/"Ocultar" (o cartão aparece na prévia e na live), chat interno entre diretor e convidados, e destacar mensagem interna. Critério: **um comentário real aparece no layout da live**.
 - **Etapa 9 (inteira):** cores da marca, 4 temas, fontes, borda/formato da câmera, esconder/editar etiqueta, banners (faixa e letreiro), estilos e banners salvos. **Antes, rodar o SQL `20261011000004_banners_estilos.sql`** (sem ele, só as listas salvas ficam indisponíveis). Critério: trocar o tema muda etiquetas e banners **na live**; conferir também se a fonte escolhida aparece na gravação (o Egress precisa baixá-la antes de começar).
-- Etapa 10 em diante: listar aqui o que for publicado sem teste.
+- **Etapa 10 (inteira):** **antes, rodar o SQL `20261011000005_ativos.sql`** (cria o bucket e a tabela). Enviar logo, overlay, fundo (imagem e vídeo), mídias por momento e vinheta; usar cada um na live. Critério: **vídeo "Volto logo" com som toca na live** durante o Intervalo. Conferir também se vídeos grandes travam a saída (recomendar 1080p ou menos).
+- Etapa 11 em diante: listar aqui o que for publicado sem teste.
 
 ## 13. Cuidados técnicos conhecidos
 

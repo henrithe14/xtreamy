@@ -10,6 +10,7 @@ type Props = {
   cena: Cena;
   /** Só o diretor pode abrir a saída (/stage) numa aba. */
   urlSaida?: string;
+  aoTerminarVinheta?: () => void;
 };
 
 const CHAVE_TAMANHO = "estudio:previa-compacta";
@@ -18,7 +19,7 @@ const CHAVE_TAMANHO = "estudio:previa-compacta";
  * Prévia ao vivo do que vai ao ar, com as marcas de área segura. A altura é limitada
  * (normal ou compacta, lembrada no navegador) para sobrar espaço para as pessoas.
  */
-export function Previa({ cena, urlSaida }: Props) {
+export function Previa({ cena, urlSaida, aoTerminarVinheta }: Props) {
   const [compacta, setCompacta] = useState(false);
 
   useEffect(() => {
@@ -74,7 +75,7 @@ export function Previa({ cena, urlSaida }: Props) {
         </div>
       </div>
       <div className="relative overflow-hidden rounded-xl ring-1 ring-white/10">
-        <Composicao cena={cena} previa />
+        <Composicao cena={cena} previa aoTerminarVinheta={aoTerminarVinheta} />
         <MarcasDeCanto />
       </div>
     </section>

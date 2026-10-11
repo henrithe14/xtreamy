@@ -79,7 +79,7 @@ function Saida({ egress }: { egress: boolean }) {
     <div className="fixed inset-0 flex items-center justify-center bg-black">
       {/* Ocupa a tela inteira em 1920×1080 (Egress) e encaixa em 16:9 numa aba comum. */}
       <div className="w-[min(100vw,calc(100vh*16/9))]">
-        <Composicao cena={cena} />
+        <Composicao cena={cena} comSom />
       </div>
       <AudioPalco cena={cena} />
       {/* Nunca mostrar botão na imagem que vai ao ar. */}
