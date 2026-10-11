@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
-import { CheckCircle, LinkBreak } from "@phosphor-icons/react/ssr";
+import { LinkBreak } from "@phosphor-icons/react/ssr";
 import { obterUsuario } from "@/lib/auth";
 import { obterTransmissaoDoUsuario, validarConvite } from "@/lib/transmissoes";
 import { Marca } from "@/components/ui/Marca";
+import { PreEntrada } from "@/components/entrar/PreEntrada";
 
 export const metadata: Metadata = { title: "Entrar no estúdio · Estúdio" };
 
@@ -12,14 +12,16 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function PaginaEntrar({ params, searchParams }: PageProps<"/t/[id]/entrar">) {
   return (
-    <main className="flex flex-1 items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        <Marca className="mb-10" />
+    <>
+      <header className="flex min-h-16 items-center border-b border-borda px-4 sm:px-8">
+        <Marca />
+      </header>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8 sm:py-10">
         <Suspense fallback={<p className="text-texto-suave">Verificando o convite…</p>}>
           <Acesso params={params} searchParams={searchParams} />
         </Suspense>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
 
@@ -50,7 +52,7 @@ async function Acesso({
 
   if (!acesso) {
     return (
-      <section className="flex flex-col items-start gap-3">
+      <section className="flex max-w-md flex-col items-start gap-3">
         <LinkBreak weight="fill" className="size-10 text-no-ar" aria-hidden />
         <h1 className="fonte-larga text-2xl font-extrabold">Convite inválido</h1>
         <p className="text-texto-suave">
@@ -61,21 +63,5 @@ async function Acesso({
     );
   }
 
-  return (
-    <section className="flex flex-col items-start gap-3">
-      <CheckCircle weight="fill" className="size-10 text-pronto" aria-hidden />
-      <p className="text-sm text-texto-suave">
-        {acesso.papel === "host" ? "Você vai entrar como diretor de" : "Você foi convidado para"}
-      </p>
-      <h1 className="fonte-larga text-2xl font-extrabold text-balance">{acesso.titulo}</h1>
-      <p className="text-texto-suave">
-        A tela para testar câmera e microfone antes de entrar fica pronta na próxima etapa.
-      </p>
-      {acesso.papel === "host" && (
-        <Link href="/" className="mt-2 font-semibold text-destaque hover:underline">
-          Voltar para as transmissões
-        </Link>
-      )}
-    </section>
-  );
+  return <PreEntrada titulo={acesso.titulo} papel={acesso.papel} />;
 }
