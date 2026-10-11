@@ -1,6 +1,7 @@
 import "server-only";
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
 import { nomeSala, type MetadadosParticipante } from "@/lib/participante";
+import type { Cena } from "@/lib/cena";
 
 function lerEnvLivekit() {
   const url = process.env.LIVEKIT_URL;
@@ -45,6 +46,32 @@ export async function criarTokenParticipante({ transmissaoId, identity, nome, me
 function clienteSala() {
   const { url, apiKey, apiSecret } = lerEnvLivekit();
   return new RoomServiceClient(url, apiKey, apiSecret);
+}
+
+/**
+ * Token do /stage: participante oculto que só assina faixas e nunca publica.
+ * Usado pela aba de saída que o diretor abre (o Egress gera o próprio token).
+ */
+export async function criarTokenStage(transmissaoId: string) {
+  const { apiKey, apiSecret } = lerEnvLivekit();
+  const token = new AccessToken(apiKey, apiSecret, {
+    identity: `stage-${crypto.randomUUID().slice(0, 8)}`,
+    name: "Saída da live",
+    ttl: "10m",
+  });
+  token.addGrant({
+    room: nomeSala(transmissaoId),
+    roomJoin: true,
+    canPublish: false,
+    canPublishData: false,
+    canSubscribe: true,
+    hidden: true,
+  });
+  return token.toJwt();
+}
+
+export async function gravarCenaNaSala(transmissaoId: string, cena: Cena) {
+  await clienteSala().updateRoomMetadata(nomeSala(transmissaoId), JSON.stringify(cena));
 }
 
 export async function removerDaSala(transmissaoId: string, identity: string) {

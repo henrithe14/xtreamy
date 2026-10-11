@@ -145,8 +145,11 @@ type Cena = {
     manchete?: { texto: string; visivel: boolean };
   };
   status: 'ensaio' | 'ao_vivo' | 'intervalo' | 'encerrada';
+  cores: { primaria: string; secundaria: string };   // cores da marca (hex); padrão #3B82F6 / #10B981
 };
 ```
+
+Implementação (Etapa 4): tipo e validação em `lib/cena.ts` (`versao` cresce a cada mudança); o diretor altera por `useControleCena` (otimista + fila) → `POST /api/cena` (só host, valida) → `updateRoomMetadata`. Todos leem com `useCena()` (metadata da sala). Quem aparece = `usePalcoVisivel`: está em `noPalco`, está na sala, não é "só diretor" e cabe no layout; essa mesma lista decide o áudio do `/stage` (`AudioPalco`). A composição (`components/stage/Composicao.tsx`) é a mesma na prévia e no `/stage`, com tamanhos em `cqw`.
 
 Efeitos sonoros **não** ficam na cena (são disparos pontuais): o host envia um evento por *data message* para o `/stage`, que toca o som uma vez.
 
@@ -275,12 +278,12 @@ Convidados veem a mesma estrutura **sem** o menu lateral de produção, sem as d
 3. **Ativos de mídia:**
    - *Logotipo* (com posição), *Overlay* (PNG transparente por cima de tudo), *Vinhetas* (vídeo curto com áudio, tocado por cima e removido ao terminar).
    - *Mídias* organizadas por momento: **Iniciar**, **Volto logo**, **Finalizar** e outras. Mostrar, tocar/pausar, tela cheia.
-4. **Plano de fundo:** cor, imagem ou vídeo em loop.
+4. **Plano de fundo:** cor, imagem ou vídeo em loop. **Sem fundo enviado, o padrão é um degradê gerado das cores da marca** (`FundoMarca`: primária no alto à esquerda, secundária embaixo à direita, base escura tingida pela primária).
 5. **Música de fundo:** playlist dos ativos de música, play/pausa/próxima, volume, ducking liga/desliga.
 6. **Efeitos sonoros:** grade de botões (soundboard) para disparo único; volume geral.
 7. **Estilos:**
    - *Câmera:* borda (espessura, cor), formato (retângulo, arredondado, círculo).
-   - *Cor da marca* (primária e secundária).
+   - *Cor da marca* (primária e secundária): ficam em `cena.cores` e mudam ao vivo o fundo padrão (degradê), além de etiquetas e banners.
    - *Tema* das etiquetas/banners/comentários: **bubble**, **minimal**, **classic**, **block**.
    - *Fontes* (lista curada do Google Fonts).
    - Salvar como estilo reutilizável.
@@ -365,3 +368,7 @@ Cada etapa só está concluída quando o critério de "Pronto" for testado de ve
 ## 14. Fora do escopo (por enquanto)
 
 Multistream (vários destinos ao mesmo tempo), gravação local em alta qualidade por participante, várias equipes/organizações, app nativo e servidor LiveKit próprio (avaliar só depois que o Marco 1 estiver estável).
+
+## 15. Ideias para depois (não implementar sem pedido)
+
+- **Diretor delegado:** o criador pode escolher não ser o diretor e passar a direção para outra pessoa da sala (ou dividir com ela). Hoje o papel de host vem só da sessão do dono (`resolverAcesso`); para isso seria preciso um papel "diretor" concedido pelo dono durante a live, validado no servidor (ex.: lista de identities com permissão de diretor por transmissão) e aplicado em `/api/cena`, remover participante, convites etc. Avaliar depois do Marco 1.

@@ -5,8 +5,8 @@ import {
   useAudioPlayback,
   useConnectionState,
   useRoomContext,
+  useLocalParticipant,
   useTrackToggle,
-  useTracks,
 } from "@livekit/components-react";
 import { ConnectionState, MediaDeviceFailure, Track } from "livekit-client";
 import {
@@ -19,12 +19,16 @@ import {
   WarningCircle,
   X,
 } from "@phosphor-icons/react";
+import { useCena, useControleCena } from "@/hooks/useCena";
+import type { Cena } from "@/lib/cena";
 import type { PapelSala } from "@/lib/participante";
 import { SimboloMarca } from "@/components/ui/Marca";
 import { Botao } from "@/components/ui/Botao";
 import { BotaoBarra } from "@/components/estudio/BotaoBarra";
 import { BotaoConvidar } from "@/components/estudio/BotaoConvidar";
-import { CartaoParticipante } from "@/components/estudio/CartaoParticipante";
+import { PainelPessoas } from "@/components/estudio/PainelPessoas";
+import { Previa } from "@/components/estudio/Previa";
+import { SeletorLayout } from "@/components/estudio/SeletorLayout";
 
 type Props = {
   transmissaoId: string;
@@ -49,9 +53,6 @@ export function Sala({
   aoSair,
 }: Props) {
   const souHost = papel === "host";
-  const cameras = useTracks([{ source: Track.Source.Camera, withPlaceholder: true }], {
-    onlySubscribed: false,
-  });
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -59,15 +60,7 @@ export function Sala({
       <AvisoSom />
       {falhaAparelho && <AvisoAparelho falha={falhaAparelho} aoFechar={aoFecharAvisoAparelho} />}
 
-      <main className="flex-1 p-3 sm:p-6">
-        <ul className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(min(100%,18rem),1fr))]">
-          {cameras.map((ref) => (
-            <li key={ref.participant.identity}>
-              <CartaoParticipante trackRef={ref} transmissaoId={transmissaoId} souHost={souHost} />
-            </li>
-          ))}
-        </ul>
-      </main>
+      {souHost ? <PainelDiretor transmissaoId={transmissaoId} /> : <PainelConvidado />}
 
       <nav
         aria-label="Controles"
@@ -84,6 +77,58 @@ export function Sala({
       {/* Toca o áudio de todos na sala (a equipe se ouve). */}
       <RoomAudioRenderer />
     </div>
+  );
+}
+
+/** Diretor: prévia + disposições à esquerda, pessoas (palco/bastidor) à direita. */
+function PainelDiretor({ transmissaoId }: { transmissaoId: string }) {
+  const { cena, alterar, erro } = useControleCena(transmissaoId);
+  return (
+    <main className="mx-auto grid w-full max-w-[100rem] flex-1 gap-4 p-3 sm:p-5 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
+      <div className="flex min-w-0 flex-col gap-4">
+        <Previa cena={cena} urlSaida={`/stage?t=${transmissaoId}`} />
+        {erro && (
+          <p role="alert" className="text-sm text-no-ar">
+            {erro}
+          </p>
+        )}
+        <SeletorLayout
+          layoutId={cena.layoutId}
+          pessoasNoPalco={cena.noPalco.length}
+          aoEscolher={(layoutId) => alterar((c) => ({ ...c, layoutId }))}
+        />
+      </div>
+      <PainelPessoas cena={cena} transmissaoId={transmissaoId} alterar={alterar} />
+    </main>
+  );
+}
+
+/** Convidado: vê a prévia da live e se está no palco ou no bastidor. */
+function PainelConvidado() {
+  const cena = useCena();
+  return (
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 p-3 sm:p-5">
+      <EstadoNoPalco cena={cena} />
+      <Previa cena={cena} />
+    </main>
+  );
+}
+
+function EstadoNoPalco({ cena }: { cena: Cena }) {
+  const { localParticipant } = useLocalParticipant();
+  const noPalco = cena.noPalco.includes(localParticipant.identity);
+  return (
+    <p
+      role="status"
+      className={`flex items-center gap-3 rounded-xl px-4 py-3 ring-1 ring-inset ${
+        noPalco ? "bg-pronto/10 text-pronto ring-pronto/25" : "bg-white/[0.04] text-texto-suave ring-white/10"
+      }`}
+    >
+      <span className={`size-2.5 rounded-full ${noPalco ? "bg-pronto" : "bg-texto-suave"}`} aria-hidden />
+      {noPalco
+        ? "Você está no palco: aparece na prévia da live."
+        : "Você está no bastidor: a equipe vê e ouve você, mas você não aparece na live."}
+    </p>
   );
 }
 

@@ -17,10 +17,11 @@ type Props = { nome: string; falando: boolean; className?: string };
  */
 export function CartaoSoVoz({ nome, falando, className = "" }: Props) {
   return (
-    <div className={`flex items-center justify-center bg-superficie-2 ${className}`}>
+    // Tamanhos em cqmin: o avatar acompanha o quadro, do miniatura ao tela cheia.
+    <div className={`flex items-center justify-center bg-superficie-2 [container-type:size] ${className}`}>
       <span
-        className={`flex aspect-square w-[22%] min-w-16 items-center justify-center rounded-full bg-destaque text-[clamp(1.25rem,4vw,2.5rem)] font-bold text-destaque-texto outline-offset-4 transition-[outline-color] duration-150 ${
-          falando ? "outline-4 outline-pronto" : "outline-4 outline-transparent"
+        className={`flex aspect-square w-[38cqmin] items-center justify-center rounded-full bg-destaque text-[14cqmin] font-bold text-destaque-texto outline-offset-[2.5cqmin] transition-[outline-color] duration-150 ${
+          falando ? "outline-[2cqmin] outline-pronto" : "outline-[2cqmin] outline-transparent"
         }`}
       >
         {nome.trim() ? iniciais(nome) : <User weight="fill" className="size-1/2" aria-hidden />}
