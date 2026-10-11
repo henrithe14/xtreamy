@@ -35,6 +35,10 @@ export async function GET(request: Request) {
     });
     return voltar("conectado=1");
   } catch (e) {
-    return voltar(`erro=${encodeURIComponent(e instanceof ErroYouTube ? e.motivo : "falha")}`);
+    const motivo = e instanceof ErroYouTube ? e.motivo : "falha";
+    // Só o motivo/mensagem, nunca tokens.
+    console.error("[youtube/callback] falhou:", motivo, e instanceof Error ? e.message : "");
+    const msg = e instanceof ErroYouTube ? e.message : "";
+    return voltar(`erro=${encodeURIComponent(motivo)}${msg ? `&msg=${encodeURIComponent(msg)}` : ""}`);
   }
 }

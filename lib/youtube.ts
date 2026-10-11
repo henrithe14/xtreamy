@@ -30,15 +30,26 @@ const MENSAGENS: Record<string, string> = {
   insufficientLivePermissions: "A conta conectada não tem permissão para transmitir neste canal.",
   quotaExceeded: "O limite diário de uso da API do YouTube acabou. Tente de novo amanhã.",
   invalid_grant: "A conexão com o YouTube expirou. Conecte o canal de novo em Destinos.",
+  accessNotConfigured:
+    "A YouTube Data API v3 não está ativada no projeto do Google Cloud. Ative em APIs e serviços → Biblioteca.",
+  SERVICE_DISABLED:
+    "A YouTube Data API v3 não está ativada no projeto do Google Cloud. Ative em APIs e serviços → Biblioteca.",
+  youtubeSignupRequired: "Esta conta Google ainda não tem um canal do YouTube. Crie o canal e tente de novo.",
+  insufficientPermissions: "A permissão de gerenciar o YouTube não foi concedida. Conecte de novo e marque a permissão.",
+  ACCESS_TOKEN_SCOPE_INSUFFICIENT:
+    "A permissão de gerenciar o YouTube não foi concedida. Conecte de novo e marque a permissão.",
 };
 
 async function lerErro(resposta: Response): Promise<ErroYouTube> {
   let motivo = `http_${resposta.status}`;
   try {
     const dados = (await resposta.json()) as {
-      error?: string | { errors?: { reason?: string }[]; message?: string };
+      error?:
+        | string
+        | { errors?: { reason?: string }[]; message?: string; details?: { reason?: string }[]; status?: string };
     };
     if (typeof dados.error === "string") motivo = dados.error;
+    else if (dados.error?.details?.find((d) => d.reason)?.reason) motivo = dados.error.details.find((d) => d.reason)!.reason!;
     else if (dados.error?.errors?.[0]?.reason) motivo = dados.error.errors[0].reason;
   } catch {}
   return new ErroYouTube(motivo, MENSAGENS[motivo] ?? "O YouTube recusou o pedido. Tente de novo em instantes.");

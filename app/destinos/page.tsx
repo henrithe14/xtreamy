@@ -55,7 +55,7 @@ export default function PaginaDestinos({ searchParams }: PageProps<"/destinos">)
 }
 
 async function Aviso({ searchParams }: Pick<PageProps<"/destinos">, "searchParams">) {
-  const { conectado, erro } = await searchParams;
+  const { conectado, erro, msg } = await searchParams;
   if (conectado) {
     return (
       <p role="status" className="flex items-center gap-3 rounded-xl bg-pronto/10 px-4 py-3 text-pronto ring-1 ring-pronto/25 ring-inset">
@@ -68,7 +68,10 @@ async function Aviso({ searchParams }: Pick<PageProps<"/destinos">, "searchParam
     return (
       <p role="alert" className="flex items-center gap-3 rounded-xl bg-no-ar/10 px-4 py-3 text-no-ar ring-1 ring-no-ar/20 ring-inset">
         <WarningCircle weight="fill" className="size-5 shrink-0" aria-hidden />
-        {ERROS[erro] ?? "Não foi possível conectar o canal. Tente de novo."}
+        <span>
+          {ERROS[erro] || (typeof msg === "string" && msg) || "Não foi possível conectar o canal. Tente de novo."}{" "}
+          <span className="text-xs opacity-70">(código: {erro})</span>
+        </span>
       </p>
     );
   }
