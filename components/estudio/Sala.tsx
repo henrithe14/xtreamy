@@ -1,11 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import {
   RoomAudioRenderer,
   useAudioPlayback,
   useConnectionState,
   useRoomContext,
+  useIsSpeaking,
   useLocalParticipant,
+  useParticipantInfo,
+  useRemoteParticipants,
   useTrackToggle,
 } from "@livekit/components-react";
 import { ConnectionState, MediaDeviceFailure, Track } from "livekit-client";
@@ -18,7 +22,14 @@ import {
   VideoCameraSlash,
   WarningCircle,
   X,
+  Headset,
+  SpeakerSimpleHigh,
+  SpeakerSimpleSlash as IconeMudoLive,
+  UserFocus,
 } from "@phosphor-icons/react";
+import { useAlternarMudoParaLive, useMudoParaLive } from "@/hooks/useAudioPrivado";
+import { usePonto } from "@/hooks/usePonto";
+import { ehPonto, lerMetadados } from "@/lib/participante";
 import { useCena, useControleCena } from "@/hooks/useCena";
 import type { Cena } from "@/lib/cena";
 import type { PapelSala } from "@/lib/participante";
@@ -34,6 +45,8 @@ import { StatusTally } from "@/components/ui/StatusTally";
 
 type Props = {
   transmissaoId: string;
+  /** Código do convite (convidado): identifica a pessoa nas ações do servidor. */
+  codigo?: string;
   titulo: string;
   papel: PapelSala;
   urlConvite?: string;
@@ -48,22 +61,29 @@ type Props = {
 
 export function Sala({
   transmissaoId,
+  codigo,
   titulo,
   papel,
   urlConvite,
-  soDiretor,
+  soDiretor: soDiretorInicial,
   temCanal,
   falhaAparelho,
   aoFecharAvisoAparelho,
   aoSair,
 }: Props) {
   const souHost = papel === "host";
+  // O modo do diretor pode mudar durante a live: vale o que está no metadata agora.
+  const { localParticipant } = useLocalParticipant();
+  const { metadata } = useParticipantInfo({ participant: localParticipant });
+  const soDiretor = metadata ? lerMetadados(metadata).soDiretor : soDiretorInicial;
 
   return (
     <div className="flex min-h-dvh flex-col">
       <BarraSuperior titulo={titulo} papel={papel} soDiretor={soDiretor} transmissaoId={transmissaoId} temCanal={temCanal} />
       <AvisoSom />
       {falhaAparelho && <AvisoAparelho falha={falhaAparelho} aoFechar={aoFecharAvisoAparelho} />}
+
+      {!souHost && <AvisoPontoRecebido />}
 
       {souHost ? <PainelDiretor transmissaoId={transmissaoId} /> : <PainelConvidado />}
 
@@ -73,6 +93,7 @@ export function Sala({
       >
         <AlternarMidia fonte={Track.Source.Microphone} />
         {!soDiretor && <AlternarMidia fonte={Track.Source.Camera} />}
+        {!soDiretor && <BotaoMudoParaLive transmissaoId={transmissaoId} codigo={codigo} />}
         {souHost && urlConvite && <BotaoConvidar transmissaoId={transmissaoId} urlInicial={urlConvite} />}
         <BotaoBarra rotulo="Sair" perigo onClick={aoSair}>
           <SignOut weight="fill" />
@@ -88,9 +109,34 @@ export function Sala({
 /** Diretor: prévia + disposições à esquerda, pessoas (palco/bastidor) à direita. */
 function PainelDiretor({ transmissaoId }: { transmissaoId: string }) {
   const { cena, alterar, erro } = useControleCena(transmissaoId);
+  const ponto = usePonto(transmissaoId);
+  const mudo = useAlternarMudoParaLive(transmissaoId);
+  const participantes = useRemoteParticipants();
+  const nomeAlvo = participantes.find((p) => p.identity === ponto.alvo)?.name;
   return (
     <main className="mx-auto grid w-full max-w-[100rem] flex-1 gap-4 p-3 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] lg:items-start deitado:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] deitado:items-start deitado:gap-3 deitado:p-2">
       <div className="flex min-w-0 flex-col gap-4 deitado:gap-2">
+        {ponto.alvo && (
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-3 rounded-xl bg-destaque/10 px-4 py-2.5 text-sm ring-1 ring-destaque/30 ring-inset"
+          >
+            <Headset weight="fill" className="size-5 text-destaque" aria-hidden />
+            <span className="flex-1">
+              {ponto.conectando
+                ? "Ligando o ponto…"
+                : `Ponto ligado com ${nomeAlvo ?? "a pessoa"}: só ela ouve você. Seu microfone na sala está mudo.`}
+            </span>
+            <Botao variante="secundario" onClick={() => void ponto.desligar()}>
+              Desligar ponto
+            </Botao>
+          </div>
+        )}
+        {(ponto.erro || mudo.erro) && (
+          <p role="alert" className="text-sm text-no-ar">
+            {ponto.erro ?? mudo.erro}
+          </p>
+        )}
         <Previa cena={cena} urlSaida={`/stage?t=${transmissaoId}`} />
         {erro && (
           <p role="alert" className="text-sm text-no-ar">
@@ -103,7 +149,16 @@ function PainelDiretor({ transmissaoId }: { transmissaoId: string }) {
           aoEscolher={(layoutId) => alterar((c) => ({ ...c, layoutId }))}
         />
       </div>
-      <PainelPessoas cena={cena} transmissaoId={transmissaoId} alterar={alterar} />
+      <PainelPessoas
+        cena={cena}
+        transmissaoId={transmissaoId}
+        alterar={alterar}
+        controles={{
+          alternarMudo: (identity, valor) => void mudo.alternar(identity, valor),
+          mudoPendente: mudo.pendente,
+          ponto,
+        }}
+      />
     </main>
   );
 }
@@ -122,6 +177,7 @@ function PainelConvidado() {
 function EstadoNoPalco({ cena }: { cena: Cena }) {
   const { localParticipant } = useLocalParticipant();
   const noPalco = cena.noPalco.includes(localParticipant.identity);
+  const mudoParaLive = useMudoParaLive(localParticipant);
   return (
     <p
       role="status"
@@ -131,7 +187,9 @@ function EstadoNoPalco({ cena }: { cena: Cena }) {
     >
       <span className={`size-2.5 rounded-full ${noPalco ? "bg-pronto" : "bg-texto-suave"}`} aria-hidden />
       {noPalco
-        ? "Você está no palco: aparece na prévia da live."
+        ? mudoParaLive
+          ? "Você está no palco, mas mudo para a live: aparece, e só a equipe ouve você."
+          : "Você está no palco: aparece na prévia da live."
         : "Você está no bastidor: a equipe vê e ouve você, mas você não aparece na live."}
     </p>
   );
@@ -161,6 +219,7 @@ function BarraSuperior({ titulo, papel, soDiretor, transmissaoId, temCanal }: Pr
           </span>
         )}
       </div>
+      {papel === "host" && <BotaoModoDiretor transmissaoId={transmissaoId} soDiretor={soDiretor} />}
       {papel === "host" && <ControlesLive transmissaoId={transmissaoId} cena={cena} temCanal={temCanal} />}
       {reconectando && (
         <p role="status" className="flex items-center gap-2 rounded-full bg-ensaio/15 px-3 py-1 text-sm font-semibold text-ensaio">
@@ -219,5 +278,80 @@ function AlternarMidia({ fonte }: { fonte: Track.Source.Microphone | Track.Sourc
     <BotaoBarra rotulo={rotulo} ligado={enabled} desativado={pending} onClick={() => void toggle()}>
       <Icone weight="fill" />
     </BotaoBarra>
+  );
+}
+
+/** Alterna "Só diretor" e "Diretor e apresentador" durante a sessão. */
+function BotaoModoDiretor({ transmissaoId, soDiretor }: { transmissaoId: string; soDiretor: boolean }) {
+  const { localParticipant } = useLocalParticipant();
+  const [mudando, setMudando] = useState(false);
+
+  async function alternar() {
+    setMudando(true);
+    try {
+      const novo = !soDiretor;
+      // Só diretor: a câmera desliga antes, para nunca aparecer por engano.
+      if (novo) await localParticipant.setCameraEnabled(false);
+      await fetch("/api/participante", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transmissaoId, alvo: localParticipant.identity, soDiretor: novo }),
+      });
+    } finally {
+      setMudando(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => void alternar()}
+      disabled={mudando}
+      aria-pressed={soDiretor}
+      title={
+        soDiretor
+          ? "Você está só dirigindo. Clique para poder aparecer na live."
+          : "Clique para só dirigir, sem aparecer na live."
+      }
+      className="inline-flex min-h-9 items-center gap-1.5 rounded-md bg-white/[0.06] px-3 text-sm font-medium ring-1 ring-white/10 ring-inset hover:bg-white/10 disabled:opacity-50"
+    >
+      <UserFocus weight="fill" className="size-4" aria-hidden />
+      {soDiretor ? "Só diretor" : "Diretor e apresentador"}
+    </button>
+  );
+}
+
+/** "Mudo para a live" da própria pessoa: a equipe continua ouvindo. */
+function BotaoMudoParaLive({ transmissaoId, codigo }: { transmissaoId: string; codigo?: string }) {
+  const { localParticipant } = useLocalParticipant();
+  const mudo = useMudoParaLive(localParticipant);
+  const { alternar, pendente } = useAlternarMudoParaLive(transmissaoId, codigo);
+  return (
+    <BotaoBarra
+      rotulo={mudo ? "Mudo p/ live" : "Ouvido na live"}
+      ligado={!mudo}
+      desativado={pendente !== null}
+      onClick={() => void alternar(localParticipant.identity, !mudo)}
+    >
+      {mudo ? <IconeMudoLive weight="fill" /> : <SpeakerSimpleHigh weight="fill" />}
+    </BotaoBarra>
+  );
+}
+
+/** Para quem recebe o ponto: só essa pessoa tem permissão de assinar a faixa do diretor. */
+function AvisoPontoRecebido() {
+  const remotos = useRemoteParticipants();
+  const ponto = remotos.find((p) => ehPonto(p.identity) && p.getTrackPublication(Track.Source.Microphone)?.isSubscribed);
+  if (!ponto) return null;
+  return <FaixaPonto participante={ponto} />;
+}
+
+function FaixaPonto({ participante }: { participante: Parameters<typeof useIsSpeaking>[0] }) {
+  const falando = useIsSpeaking(participante);
+  return (
+    <div role="status" className="flex items-center justify-center gap-3 bg-destaque/15 px-4 py-2 text-sm font-semibold text-texto">
+      <Headset weight="fill" className={`size-5 text-destaque ${falando ? "tally-pulso" : ""}`} aria-hidden />
+      Diretor falando com você (só você ouve, não vai para a live)
+    </div>
   );
 }

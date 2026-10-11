@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import {
   AudioTrack,
   useIsSpeaking,
+  useParticipantAttribute,
   useParticipantInfo,
   useParticipants,
   useTracks,
@@ -13,7 +14,7 @@ import {
 import { Track, type Participant } from "livekit-client";
 import type { Cena, CoresMarca } from "@/lib/cena";
 import { obterLayout, type Slot } from "@/lib/layouts";
-import { lerMetadados } from "@/lib/participante";
+import { ATRIBUTO_AUDIO_PRIVADO, lerMetadados } from "@/lib/participante";
 import { CartaoSoVoz } from "@/components/ui/CartaoSoVoz";
 
 /**
@@ -133,7 +134,8 @@ function SlotPessoa({ participante, slot, camera }: { participante: Participant;
 
 /**
  * Só no /stage: toca o microfone de quem está visível no palco, e de mais ninguém.
- * No intervalo e depois de encerrada, ninguém é ouvido na live.
+ * No intervalo e depois de encerrada, ninguém é ouvido na live. Quem está "mudo para a
+ * live" também não. O ponto do diretor nunca é tocado (e o /stage nem tem permissão de ouvi-lo).
  */
 export function AudioPalco({ cena }: { cena: Cena }) {
   const palco = usePalcoVisivel(cena);
@@ -145,8 +147,14 @@ export function AudioPalco({ cena }: { cena: Cena }) {
       {microfones
         .filter((m) => visiveis.has(m.participant.identity))
         .map((m) => (
-          <AudioTrack key={m.participant.identity} trackRef={m} />
+          <AudioSeNaoPrivado key={m.participant.identity} trackRef={m} />
         ))}
     </>
   );
+}
+
+/** "Mudo para a live": reage ao atributo na hora; o vídeo continua, a voz não vai ao ar. */
+function AudioSeNaoPrivado({ trackRef }: { trackRef: TrackReference }) {
+  const privado = useParticipantAttribute(ATRIBUTO_AUDIO_PRIVADO, { participant: trackRef.participant }) === "1";
+  return privado ? null : <AudioTrack trackRef={trackRef} />;
 }

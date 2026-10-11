@@ -116,7 +116,7 @@ Implementação (Etapa 3): `lib/acesso.ts → resolverAcesso(id, codigo)` decide
 - O próprio host, quando logado e dono da transmissão, entra com papel de host pelo "Entrar no estúdio" da Home (sem código).
 
 ### Modo diretor
-Na pré-entrada o host escolhe "Diretor e apresentador" ou "Só diretor" (`preferencias.modoHost`, vai no metadata como `soDiretor`). A troca durante a live (menu de cima) entra na Etapa 7. O host pode alternar entre:
+Na pré-entrada o host escolhe "Diretor e apresentador" ou "Só diretor" (`preferencias.modoHost`, vai no metadata como `soDiretor`). Durante a sessão, o botão no menu de cima alterna o modo (`POST /api/participante` com `soDiretor`, que preserva o resto do metadata); ao virar "só diretor" a câmera desliga antes. O host pode alternar entre:
 - **Modo apresentador:** está na sala com câmera/mic e pode ir ao palco.
 - **Modo diretor:** só controla. Não publica câmera, não aparece e não é ouvido na live, mas ouve tudo e fala com a equipe/ponto. Interface com os controles em destaque.
 
@@ -162,10 +162,13 @@ Efeitos sonoros **não** ficam na cena (são disparos pontuais): o host envia um
 - Botão em cada participante (host) e na barra do próprio participante: marca `audioPrivado: true` nos metadata do participante. O `/stage` ignora o áudio dele enquanto a marca estiver ativa; o vídeo continua.
 - A equipe continua ouvindo normalmente. Indicador visível: "🔇 mudo para a live".
 
+Implementação (Etapa 7): o atributo `audioPrivado` (participant **attributes**) é gravado só pelo servidor em `POST /api/participante` (diretor: em qualquer pessoa; convidado: só em si, identificado pelo cookie `estudio_id_<id>` + código). O `/stage` usa `AudioSeNaoPrivado`, que reage ao atributo na hora.
+
 ### Ponto (diretor → um participante)
 - O host publica uma faixa de áudio separada chamada `ponto`.
 - `setTrackSubscriptionPermissions` garante que **só o participante alvo** possa assinar. O `/stage` nunca a assina.
 - Na tela do alvo: indicador "Diretor falando com você".
+- Implementação (Etapa 7): o ponto é uma **segunda conexão** do diretor (`ponto-{userId}`, token de `/api/token/ponto`: publica, não assina). A permissão (`setTrackSubscriptionPermissions(false, [alvo])`) é definida **antes** de publicar. Como `setTrackSubscriptionPermissions` vale para todas as faixas de um participante, usar a conexão principal bloquearia a câmera/microfone do diretor para o Egress; por isso a conexão separada. Enquanto o ponto está ligado, o microfone principal do diretor fica mudo. Identities `ponto-` ficam fora das listas e do palco (`ehPonto`).
 
 ### Teleprompter
 - O host cria roteiros (texto) e envia para um ou mais participantes.
@@ -357,6 +360,17 @@ Cada etapa só está concluída quando o critério de "Pronto" for testado de ve
 | 17 | Robustez: reconexão, aviso de rede, erros, encerrar egress esquecido, ensaio geral | Live de ensaio completa com 5+ pessoas sem intervenção técnica |
 
 **Marco 1 (substitui o StreamYard no básico):** etapas 0–8.
+
+### Testes pendentes (fazer antes de considerar o Marco 1 pronto)
+
+Etapas implementadas e publicadas, mas cujo critério de "Pronto" ainda não foi testado de verdade (o usuário estava longe do computador em 2026-10-11 e pediu para seguir):
+
+- **Etapa 2:** prévia e medidor no **iPhone e Android** (desktop já aprovado).
+- **Etapa 5:** conexão do canal aprovada; falta confirmar que a **live criada aparece no YouTube Studio** e que excluir a transmissão apaga a live.
+- **Configurar live** (categoria, tags, idioma, capa): não testado.
+- **Etapa 6 (inteira):** Iniciar → live no YouTube igual à prévia (bastidor invisível e inaudível), Intervalo ("Já voltamos", sem som) e Retomar, **30 min estáveis**, Encerrar (gravação fica no canal). Pontos de atenção no primeiro teste: tempo até o YouTube reconhecer o sinal (hoje espera até ~75 s) e o custo do Egress por minuto.
+- **Etapa 7 (inteira):** "mudo para a live" (pela barra e pelo diretor; a equipe ouve, a live não), ponto (só o alvo ouve, aparece "Diretor falando com você", o microfone principal do diretor fica mudo) e alternar "Só diretor" durante a live. Critério: **assistir à gravação no YouTube** e confirmar que nada privado vazou.
+- Etapa 8 em diante: listar aqui o que for publicado sem teste.
 
 ## 13. Cuidados técnicos conhecidos
 

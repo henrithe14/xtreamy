@@ -26,3 +26,13 @@ export function lerMetadados(bruto: string | undefined): MetadadosParticipante {
 export function nomeSala(transmissaoId: string) {
   return `t-${transmissaoId}`;
 }
+
+/** Prefixo da conexão do ponto do diretor (não é uma pessoa: fica fora das listas e do palco). */
+export const PREFIXO_PONTO = "ponto-";
+
+export function ehPonto(identity: string) {
+  return identity.startsWith(PREFIXO_PONTO);
+}
+
+/** Atributo "mudo para a live": a equipe ouve, o /stage não toca. */
+export const ATRIBUTO_AUDIO_PRIVADO = "audioPrivado";

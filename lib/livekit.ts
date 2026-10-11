@@ -7,7 +7,7 @@ import {
   StreamOutput,
   StreamProtocol,
 } from "livekit-server-sdk";
-import { nomeSala, type MetadadosParticipante } from "@/lib/participante";
+import { lerMetadados, nomeSala, PREFIXO_PONTO, type MetadadosParticipante } from "@/lib/participante";
 import { lerCena, type Cena } from "@/lib/cena";
 
 function lerEnvLivekit() {
@@ -117,6 +117,40 @@ export async function iniciarEgress(transmissaoId: string, rtmp: string): Promis
 
 export async function pararEgress(egressId: string) {
   await clienteEgress().stopEgress(egressId);
+}
+
+/** Atributos que só o servidor grava (ex.: audioPrivado). "" remove o atributo. */
+export async function definirAtributos(transmissaoId: string, identity: string, attributes: Record<string, string>) {
+  await clienteSala().updateParticipant(nomeSala(transmissaoId), identity, { attributes });
+}
+
+/** Troca o "só diretor" do host, preservando o resto do metadata (papel, etiqueta). */
+export async function definirSoDiretor(transmissaoId: string, identity: string, soDiretor: boolean) {
+  const sala = nomeSala(transmissaoId);
+  const atual = await clienteSala().getParticipant(sala, identity);
+  const metadados = { ...lerMetadados(atual.metadata), soDiretor };
+  await clienteSala().updateParticipant(sala, identity, { metadata: JSON.stringify(metadados) });
+}
+
+/**
+ * Token do ponto: conexão separada do diretor, só para enviar a voz a uma pessoa.
+ * Não assina nada; quem pode ouvir é decidido por setTrackSubscriptionPermissions.
+ */
+export async function criarTokenPonto(transmissaoId: string, userId: string) {
+  const { apiKey, apiSecret } = lerEnvLivekit();
+  const token = new AccessToken(apiKey, apiSecret, {
+    identity: `${PREFIXO_PONTO}${userId}`,
+    name: "Ponto do diretor",
+    ttl: "10m",
+  });
+  token.addGrant({
+    room: nomeSala(transmissaoId),
+    roomJoin: true,
+    canPublish: true,
+    canSubscribe: false,
+    canPublishData: false,
+  });
+  return token.toJwt();
 }
 
 export async function removerDaSala(transmissaoId: string, identity: string) {

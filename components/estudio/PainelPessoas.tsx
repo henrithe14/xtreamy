@@ -11,22 +11,33 @@ import {
   type TrackReference,
 } from "@livekit/components-react";
 import { Track, type Participant } from "livekit-client";
-import { ArrowLineUp, MicrophoneSlash, Star, UserMinus } from "@phosphor-icons/react";
+import { ArrowLineUp, Headset, MicrophoneSlash, SpeakerSimpleSlash, Star, UserMinus } from "@phosphor-icons/react";
+import { useMudoParaLive } from "@/hooks/useAudioPrivado";
+import type { ControlePonto } from "@/hooks/usePonto";
 import type { Cena } from "@/lib/cena";
 import { obterLayout } from "@/lib/layouts";
-import { lerMetadados } from "@/lib/participante";
+import { ehPonto, lerMetadados } from "@/lib/participante";
 import { removerParticipante } from "@/lib/acoes/sala";
 import { CartaoSoVoz } from "@/components/ui/CartaoSoVoz";
+
+/** Ações do diretor que valem para qualquer pessoa: mudo para a live e ponto. */
+export type ControlesPessoa = {
+  alternarMudo: (identity: string, mudo: boolean) => void;
+  mudoPendente: string | null;
+  ponto: ControlePonto;
+};
 
 type Props = {
   cena: Cena;
   transmissaoId: string;
   alterar: (mudanca: (atual: Cena) => Omit<Cena, "versao">) => void;
+  controles: ControlesPessoa;
 };
 
 /** Pessoas na sala, separadas em No palco (na ordem dos slots) e Bastidor. */
-export function PainelPessoas({ cena, transmissaoId, alterar }: Props) {
-  const participantes = useParticipants();
+export function PainelPessoas({ cena, transmissaoId, alterar, controles }: Props) {
+  // A conexão do ponto não é uma pessoa: fica fora da lista.
+  const participantes = useParticipants().filter((p) => !ehPonto(p.identity));
   const cameras = useTracks([Track.Source.Camera], { onlySubscribed: false });
   const porIdentity = new Map(participantes.map((p) => [p.identity, p]));
   const maxPessoas = obterLayout(cena.layoutId).maxPessoas;
@@ -64,6 +75,7 @@ export function PainelPessoas({ cena, transmissaoId, alterar }: Props) {
               participante={p}
               camera={camera(p)}
               transmissaoId={transmissaoId}
+              controles={controles}
               foraDaLive={i >= maxPessoas}
               acoes={
                 <>
@@ -89,6 +101,7 @@ export function PainelPessoas({ cena, transmissaoId, alterar }: Props) {
               participante={p}
               camera={camera(p)}
               transmissaoId={transmissaoId}
+              controles={controles}
               acoes={
                 soDiretor ? (
                   <span className="text-xs text-texto-suave">Fora da live</span>
@@ -128,11 +141,12 @@ type PropsItem = {
   camera?: TrackReference;
   transmissaoId: string;
   acoes: React.ReactNode;
+  controles: ControlesPessoa;
   /** No palco, mas o layout atual não tem lugar para esta pessoa. */
   foraDaLive?: boolean;
 };
 
-function ItemPessoa({ participante, camera, transmissaoId, acoes, foraDaLive }: PropsItem) {
+function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, foraDaLive }: PropsItem) {
   const { name, identity, metadata } = useParticipantInfo({ participant: participante });
   const { etiqueta, papel, soDiretor } = lerMetadados(metadata);
   const falando = useIsSpeaking(participante);
@@ -140,6 +154,9 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, foraDaLive }: 
   const comVideo = camera !== undefined && !camera.publication.isMuted;
   const nome = name || "Participante";
   const local = participante.isLocal;
+  const mudoParaLive = useMudoParaLive(participante);
+  const { ponto } = controles;
+  const pontoNestaPessoa = ponto.alvo === identity;
 
   return (
     <li className="flex flex-col gap-2 rounded-lg bg-white/[0.03] p-2 ring-1 ring-white/[0.06]">
@@ -152,6 +169,12 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, foraDaLive }: 
           <VideoTrack trackRef={camera} className={`size-full object-cover ${local ? "-scale-x-100" : ""}`} />
         ) : (
           <CartaoSoVoz nome={nome} falando={false} className="absolute inset-0" />
+        )}
+        {mudoParaLive && (
+          <span className="absolute top-1 left-1 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[0.7rem] font-semibold text-ensaio backdrop-blur-sm">
+            <SpeakerSimpleSlash weight="fill" className="size-3.5" aria-hidden />
+            Mudo para a live
+          </span>
         )}
         {!local && identity && (
           <div className="absolute top-1 right-1">
@@ -177,7 +200,27 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, foraDaLive }: 
               : etiqueta || "Convidado"}
         </p>
       </div>
-      <div className="flex items-center gap-1 [&>*:last-child]:flex-1">{acoes}</div>
+      <div className="flex items-center gap-1">
+        <BotaoAcao
+          onClick={() => identity && controles.alternarMudo(identity, !mudoParaLive)}
+          ativo={mudoParaLive}
+          desativado={controles.mudoPendente === identity}
+          rotulo={mudoParaLive ? "Voltar a ser ouvido na live" : "Mudo para a live (a equipe continua ouvindo)"}
+        >
+          <SpeakerSimpleSlash weight="fill" />
+        </BotaoAcao>
+        {!local && identity && (
+          <BotaoAcao
+            onClick={() => void (pontoNestaPessoa ? ponto.desligar() : ponto.falarCom(identity))}
+            ativo={pontoNestaPessoa}
+            desativado={ponto.conectando}
+            rotulo={pontoNestaPessoa ? "Desligar o ponto" : "Falar só com esta pessoa (ponto)"}
+          >
+            <Headset weight="fill" />
+          </BotaoAcao>
+        )}
+        <div className="flex flex-1 items-center gap-1 [&>*:last-child]:flex-1">{acoes}</div>
+      </div>
     </li>
   );
 }
@@ -187,21 +230,26 @@ type PropsBotaoAcao = {
   children: React.ReactNode;
   rotulo?: string;
   destaque?: boolean;
+  /** Para liga/desliga: realça quando ligado. */
+  ativo?: boolean;
   desativado?: boolean;
 };
 
-function BotaoAcao({ onClick, children, rotulo, destaque, desativado }: PropsBotaoAcao) {
+function BotaoAcao({ onClick, children, rotulo, destaque, ativo, desativado }: PropsBotaoAcao) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={rotulo}
       title={rotulo}
+      aria-pressed={ativo}
       disabled={desativado}
       className={`inline-flex min-h-9 items-center justify-center gap-1 rounded-md px-2.5 text-xs font-semibold transition-colors disabled:opacity-40 [&_svg]:size-4 ${
         destaque
           ? "bg-destaque text-destaque-texto hover:bg-destaque-forte"
-          : "bg-white/[0.06] text-texto ring-1 ring-white/10 ring-inset hover:bg-white/10"
+          : ativo
+            ? "bg-ensaio/20 text-ensaio ring-1 ring-ensaio/40 ring-inset hover:bg-ensaio/30"
+            : "bg-white/[0.06] text-texto ring-1 ring-white/10 ring-inset hover:bg-white/10"
       }`}
     >
       {children}
