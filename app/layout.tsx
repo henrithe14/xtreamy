@@ -15,8 +15,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-BR" className={`${archivo.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+    // suppressHydrationWarning: extensões do navegador (corretores, conta-gotas) injetam
+    // atributos em <html>/<body> antes do React; só esses dois elementos são afetados.
+    <html lang="pt-BR" className={`${archivo.variable} h-full antialiased`} suppressHydrationWarning>
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>{children}</body>
     </html>
   );
 }

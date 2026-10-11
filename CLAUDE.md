@@ -83,7 +83,7 @@ Crie também um `.env.example` com as mesmas chaves vazias e mantenha `.env.loca
 Tabelas iniciais (com RLS: cada usuário só vê o que é seu):
 
 - `destinos`: id, user_id, tipo ('youtube'), nome do canal, channel_id, refresh_token **criptografado**.
-- `transmissoes`: id, user_id, titulo, descricao, destino_id, status ('rascunho' | 'ensaio' | 'ao_vivo' | 'intervalo' | 'encerrada'), youtube_broadcast_id, live_chat_id, egress_id, criado_em.
+- `transmissoes`: id, user_id, titulo, descricao, privacidade ('publica' | 'nao_listada' | 'privada'), destino_id, status ('rascunho' | 'ensaio' | 'ao_vivo' | 'intervalo' | 'encerrada'), codigo_convite, youtube_broadcast_id, live_chat_id, egress_id, criado_em. Convidados (sem conta) não leem a tabela: o convite é validado pela função `dados_convite(id, codigo)` (security definer), que devolve só o título.
 - `layouts`: id, user_id (null = padrão do sistema), nome, definicao (JSON, seção 8.3).
 - `estilos`: id, user_id, nome, definicao (JSON: tema, cores, fontes, câmera).
 - `ativos`: id, user_id, tipo ('logo' | 'overlay' | 'vinheta' | 'midia' | 'fundo' | 'musica' | 'efeito'), nome, url (Storage), metadados (duração, categoria: 'iniciar' | 'volto-logo' | 'finalizar'…).
@@ -91,6 +91,10 @@ Tabelas iniciais (com RLS: cada usuário só vê o que é seu):
 - `banners`, `enquetes`, `roteiros` (teleprompter): criados nas etapas correspondentes.
 
 Arquivos ficam no **Supabase Storage**, num bucket por tipo de ativo.
+
+Migrações SQL ficam em `supabase/migrations/` e são aplicadas no SQL Editor do Supabase. Os tipos do banco ficam em `lib/supabase/tipos.ts` (manter em sincronia). A tabela `destinos` e a referência `transmissoes.destino_id → destinos` entram na Etapa 5.
+
+**Contas:** não há cadastro público. O criador é criado no painel do Supabase (Authentication → Users → Add user) e o cadastro aberto fica desligado.
 
 ## 7. Conceitos centrais
 
