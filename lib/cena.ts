@@ -11,6 +11,17 @@ export type CoresMarca = { primaria: string; secundaria: string };
 
 export const CORES_PADRAO: CoresMarca = { primaria: "#3b82f6", secundaria: "#10b981" };
 
+/** Comentário mostrado na tela (do chat do YouTube ou do chat interno). */
+export type ComentarioDestacado = {
+  autor: string;
+  /** Foto do autor (só endereços do YouTube/Google). */
+  avatar: string | null;
+  texto: string;
+  origem: "youtube" | "interno";
+};
+
+export const LIMITES_COMENTARIO = { autor: 80, texto: 300 } as const;
+
 export type Cena = {
   /** Cresce a cada alteração; serve para descartar respostas antigas. */
   versao: number;
@@ -21,6 +32,7 @@ export type Cena = {
   /** Quando a live entrou no ar (ms desde 1970). Só o servidor define. */
   noArDesde: number | null;
   cores: CoresMarca;
+  comentarioDestacado: ComentarioDestacado | null;
 };
 
 export const CENA_INICIAL: Cena = {
@@ -30,6 +42,7 @@ export const CENA_INICIAL: Cena = {
   status: "ensaio",
   noArDesde: null,
   cores: CORES_PADRAO,
+  comentarioDestacado: null,
 };
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -41,6 +54,20 @@ function validarCores(dado: unknown): CoresMarca | null {
   if (typeof c.primaria !== "string" || !HEX.test(c.primaria)) return null;
   if (typeof c.secundaria !== "string" || !HEX.test(c.secundaria)) return null;
   return { primaria: c.primaria.toLowerCase(), secundaria: c.secundaria.toLowerCase() };
+}
+
+/** Avatar só de domínios do YouTube/Google: a live nunca carrega imagem de terceiros. */
+const AVATAR_PERMITIDO = /^https:\/\/(yt\d?\.ggpht\.com|[a-z0-9-]+\.googleusercontent\.com)\//;
+
+function validarComentario(dado: unknown): ComentarioDestacado | null | "invalido" {
+  if (dado === undefined || dado === null) return null;
+  if (typeof dado !== "object") return "invalido";
+  const c = dado as Partial<ComentarioDestacado>;
+  if (typeof c.autor !== "string" || !c.autor.trim() || c.autor.length > LIMITES_COMENTARIO.autor) return "invalido";
+  if (typeof c.texto !== "string" || !c.texto.trim() || c.texto.length > LIMITES_COMENTARIO.texto) return "invalido";
+  if (c.origem !== "youtube" && c.origem !== "interno") return "invalido";
+  const avatar = typeof c.avatar === "string" && c.avatar.length <= 500 && AVATAR_PERMITIDO.test(c.avatar) ? c.avatar : null;
+  return { autor: c.autor.trim(), texto: c.texto.trim(), origem: c.origem, avatar };
 }
 
 export const MAX_NO_PALCO = 10;
@@ -60,7 +87,17 @@ export function validarCena(dado: unknown): Cena | null {
   const cores = validarCores(c.cores);
   if (!cores) return null;
   const noArDesde = typeof c.noArDesde === "number" && Number.isFinite(c.noArDesde) ? c.noArDesde : null;
-  return { versao: c.versao, layoutId: c.layoutId, noPalco: c.noPalco, status: c.status, noArDesde, cores };
+  const comentarioDestacado = validarComentario(c.comentarioDestacado);
+  if (comentarioDestacado === "invalido") return null;
+  return {
+    versao: c.versao,
+    layoutId: c.layoutId,
+    noPalco: c.noPalco,
+    status: c.status,
+    noArDesde,
+    cores,
+    comentarioDestacado,
+  };
 }
 
 export function lerCena(metadata: string | undefined): Cena {

@@ -36,11 +36,13 @@ async function Acesso({ params, searchParams }: Pick<PageProps<"/t/[id]/estudio"
   // Só o diretor recebe o link de convite (para o botão "Convidar").
   let convite: string | undefined;
   let temCanal = false;
+  let temChat = false;
   if (acesso.papel === "host") {
     const transmissao = await obterTransmissaoDoUsuario(id);
     if (transmissao) {
       convite = urlConvite(transmissao);
       temCanal = Boolean(transmissao.youtube_broadcast_id && transmissao.youtube_stream_id);
+      temChat = Boolean(transmissao.live_chat_id);
     }
   }
 
@@ -52,6 +54,7 @@ async function Acesso({ params, searchParams }: Pick<PageProps<"/t/[id]/estudio"
       papel={acesso.papel}
       urlConvite={convite}
       temCanal={temCanal}
+      temChat={temChat}
     />
   );
 }

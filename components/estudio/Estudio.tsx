@@ -19,6 +19,7 @@ type Props = {
   papel: PapelSala;
   urlConvite?: string;
   temCanal: boolean;
+  temChat: boolean;
 };
 
 type Conexao = { estado: "buscando" } | { estado: "pronta"; token: string } | { estado: "erro"; mensagem: string };

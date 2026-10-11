@@ -30,6 +30,10 @@ const MENSAGENS: Record<string, string> = {
   insufficientLivePermissions: "A conta conectada não tem permissão para transmitir neste canal.",
   quotaExceeded: "O limite diário de uso da API do YouTube acabou. Tente de novo amanhã.",
   redundantTransition: "A live já está nesse estado no YouTube.",
+  liveChatEnded: "O chat desta live foi encerrado.",
+  liveChatNotFound: "O chat desta live não foi encontrado no YouTube.",
+  liveChatDisabled: "O chat está desativado nesta live (ative no YouTube Studio).",
+  rateLimitExceeded: "O YouTube pediu para ler o chat mais devagar. Tentando de novo em instantes.",
   invalidTransition: "O YouTube ainda não aceitou essa mudança. Aguarde alguns segundos e tente de novo.",
   errorStreamInactive: "O YouTube ainda não está recebendo o vídeo. Aguarde alguns segundos e tente de novo.",
   invalid_grant: "A conexão com o YouTube expirou. Conecte o canal de novo em Destinos.",
@@ -312,4 +316,68 @@ export async function transicionar(accessToken: string, broadcastId: string, par
   await api(accessToken, `/liveBroadcasts/transition?broadcastStatus=${para}&id=${broadcastId}&part=status`, {
     method: "POST",
   });
+}
+
+// ---------- Chat ao vivo (Etapa 8) ----------
+
+export type MensagemChat = {
+  id: string;
+  autor: string;
+  avatar: string | null;
+  texto: string;
+  /** ISO */
+  em: string;
+  canalId: string;
+  dono: boolean;
+  moderador: boolean;
+};
+
+/**
+ * Lê mensagens novas do chat ao vivo. O YouTube diz quanto esperar até a próxima
+ * leitura (pollingIntervalMillis): nunca ler mais rápido que isso (cota diária).
+ */
+export async function lerChat(accessToken: string, liveChatId: string, pagina?: string) {
+  const params = new URLSearchParams({
+    liveChatId,
+    part: "snippet,authorDetails",
+    maxResults: "200",
+    profileImageSize: "64",
+  });
+  if (pagina) params.set("pageToken", pagina);
+  const dados = await api<{
+    items?: {
+      id: string;
+      snippet: { type: string; displayMessage?: string; publishedAt: string };
+      authorDetails: {
+        displayName: string;
+        profileImageUrl?: string;
+        channelId: string;
+        isChatOwner: boolean;
+        isChatModerator: boolean;
+      };
+    }[];
+    nextPageToken?: string;
+    pollingIntervalMillis?: number;
+    offlineAt?: string;
+  }>(accessToken, `/liveChat/messages?${params}`);
+
+  const mensagens: MensagemChat[] = (dados.items ?? [])
+    .filter((m) => m.snippet.type === "textMessageEvent" && m.snippet.displayMessage)
+    .map((m) => ({
+      id: m.id,
+      autor: m.authorDetails.displayName,
+      avatar: m.authorDetails.profileImageUrl ?? null,
+      texto: m.snippet.displayMessage ?? "",
+      em: m.snippet.publishedAt,
+      canalId: m.authorDetails.channelId,
+      dono: m.authorDetails.isChatOwner,
+      moderador: m.authorDetails.isChatModerator,
+    }));
+
+  return {
+    mensagens,
+    proximaPagina: dados.nextPageToken ?? null,
+    intervaloMs: Math.max(dados.pollingIntervalMillis ?? 5000, 2000),
+    encerrado: Boolean(dados.offlineAt),
+  };
 }

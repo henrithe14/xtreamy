@@ -12,7 +12,7 @@ import {
   type TrackReference,
 } from "@livekit/components-react";
 import { Track, type Participant } from "livekit-client";
-import type { Cena, CoresMarca } from "@/lib/cena";
+import type { Cena, ComentarioDestacado, CoresMarca } from "@/lib/cena";
 import { obterLayout, type Slot } from "@/lib/layouts";
 import { ATRIBUTO_AUDIO_PRIVADO, lerMetadados } from "@/lib/participante";
 import { CartaoSoVoz } from "@/components/ui/CartaoSoVoz";
@@ -58,6 +58,14 @@ export function Composicao({ cena, previa = false }: Props) {
         />
       ))}
 
+      {cena.comentarioDestacado && (
+        <CartaoComentario
+          key={`${cena.comentarioDestacado.autor}|${cena.comentarioDestacado.texto}`}
+          comentario={cena.comentarioDestacado}
+          cor={cena.cores.primaria}
+        />
+      )}
+
       {(cena.status === "intervalo" || cena.status === "encerrada") && (
         <TelaCheiaMarca cores={cena.cores} texto={cena.status === "intervalo" ? "Já voltamos" : "Transmissão encerrada"} />
       )}
@@ -90,6 +98,31 @@ export function FundoMarca({ cores }: { cores: CoresMarca }) {
         ].join(", "),
       }}
     />
+  );
+}
+
+/** Comentário em destaque: embaixo à esquerda, por cima dos vídeos (camadas, seção 8.4). */
+function CartaoComentario({ comentario, cor }: { comentario: ComentarioDestacado; cor: string }) {
+  return (
+    <div className="absolute bottom-[5%] left-[3%] flex max-w-[46%] animate-[entrar_300ms_ease-out] items-start gap-[1cqw] rounded-[0.8cqw] bg-black/70 p-[1.1cqw] pr-[1.6cqw] shadow-[0_1cqw_3cqw_rgb(0_0_0/0.45)] ring-1 ring-white/10 backdrop-blur-md motion-reduce:animate-none">
+      {comentario.avatar ? (
+        // eslint-disable-next-line @next/next/no-img-element -- foto do autor no YouTube, tamanho fixo
+        <img src={comentario.avatar} alt="" className="size-[3.4cqw] shrink-0 rounded-full" referrerPolicy="no-referrer" />
+      ) : (
+        <span
+          className="flex size-[3.4cqw] shrink-0 items-center justify-center rounded-full text-[1.4cqw] font-bold text-white"
+          style={{ background: cor }}
+        >
+          {comentario.autor.trim()[0]?.toUpperCase()}
+        </span>
+      )}
+      <div className="min-w-0">
+        <p className="truncate text-[1.3cqw] font-semibold leading-tight" style={{ color: `color-mix(in srgb, ${cor} 55%, white)` }}>
+          {comentario.autor}
+        </p>
+        <p className="mt-[0.3cqw] line-clamp-4 text-[1.55cqw] leading-snug text-white">{comentario.texto}</p>
+      </div>
+    </div>
   );
 }
 

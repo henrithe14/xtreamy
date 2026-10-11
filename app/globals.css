@@ -108,6 +108,13 @@
   letter-spacing: -0.01em;
 }
 
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(12%);
+  }
+}
+
 @keyframes aparecer {
   from {
     opacity: 0;

@@ -308,7 +308,9 @@ Layout de uma coluna, botões grandes; esconder "Apresentar" quando o navegador 
 ### 10.1 YouTube
 - OAuth separado do login ("Conectar YouTube"), com refresh token guardado criptografado.
 - Criar broadcast + stream + bind na Nova Transmissão; transições de status no Iniciar/Encerrar.
-- Chat: `liveChatMessages.list` com o `liveChatId`, **respeitando `pollingIntervalMillis`**. A cota diária da API é limitada, então nunca fazer polling mais rápido que o indicado e parar quando a live terminar. O polling roda **no servidor** (um por transmissão) e repassa as mensagens à sala por *data message*.
+- Chat: `liveChatMessages.list` com o `liveChatId`, **respeitando `pollingIntervalMillis`**. A cota diária da API é limitada, então nunca fazer polling mais rápido que o indicado e parar quando a live terminar.
+- **Decisão (Etapa 8):** a Vercel não mantém processos contínuos, então em vez de um poller no servidor por transmissão, o **painel do diretor** chama `GET /api/youtube/chat?t=&pagina=` (só host); o servidor lê o YouTube com o token (que nunca vai ao navegador) e devolve mensagens + `intervaloMs`, e o painel só pede de novo depois desse intervalo. A leitura só roda durante a live (ao vivo/intervalo) ou com a aba Comentários aberta, e para quando o chat encerra ou a cota acaba. Consequência: o chat do YouTube só é lido com o estúdio do diretor aberto. Se no futuro for preciso ler sem o diretor (ex.: enquetes na Etapa 15 com o diretor ausente), avaliar um worker externo.
+- Chat interno: `useChat` do LiveKit (data streams), efêmero (não salvo). Destacar na tela grava `cena.comentarioDestacado` (autor, avatar só de domínios do YouTube/Google, texto até 300, origem); a composição mostra o cartão embaixo à esquerda.
 
 ### 10.2 Enquetes pelo chat
 Contar só o **primeiro voto válido por autor** (`authorChannelId`) enquanto a votação estiver aberta.
@@ -370,7 +372,8 @@ Etapas implementadas e publicadas, mas cujo critério de "Pronto" ainda não foi
 - **Configurar live** (categoria, tags, idioma, capa): não testado.
 - **Etapa 6 (inteira):** Iniciar → live no YouTube igual à prévia (bastidor invisível e inaudível), Intervalo ("Já voltamos", sem som) e Retomar, **30 min estáveis**, Encerrar (gravação fica no canal). Pontos de atenção no primeiro teste: tempo até o YouTube reconhecer o sinal (hoje espera até ~75 s) e o custo do Egress por minuto.
 - **Etapa 7 (inteira):** "mudo para a live" (pela barra e pelo diretor; a equipe ouve, a live não), ponto (só o alvo ouve, aparece "Diretor falando com você", o microfone principal do diretor fica mudo) e alternar "Só diretor" durante a live. Critério: **assistir à gravação no YouTube** e confirmar que nada privado vazou.
-- Etapa 8 em diante: listar aqui o que for publicado sem teste.
+- **Etapa 8 (inteira):** chat do YouTube no painel (aba Comentários), "Mostrar na tela"/"Ocultar" (o cartão aparece na prévia e na live), chat interno entre diretor e convidados, e destacar mensagem interna. Critério: **um comentário real aparece no layout da live**.
+- Etapa 9 em diante: listar aqui o que for publicado sem teste.
 
 ## 13. Cuidados técnicos conhecidos
 

@@ -40,6 +40,7 @@ import { BotaoConvidar } from "@/components/estudio/BotaoConvidar";
 import { PainelPessoas } from "@/components/estudio/PainelPessoas";
 import { Previa } from "@/components/estudio/Previa";
 import { SeletorLayout } from "@/components/estudio/SeletorLayout";
+import { ChatEstudio, PainelComentarios } from "@/components/estudio/PainelComentarios";
 import { ControlesLive, Cronometro } from "@/components/estudio/ControlesLive";
 import { StatusTally } from "@/components/ui/StatusTally";
 
@@ -54,6 +55,8 @@ type Props = {
   soDiretor: boolean;
   /** A transmissão tem live criada no YouTube (pode iniciar). */
   temCanal: boolean;
+  /** A live no YouTube tem chat (o diretor lê e destaca comentários). */
+  temChat: boolean;
   falhaAparelho?: MediaDeviceFailure;
   aoFecharAvisoAparelho: () => void;
   aoSair: () => void;
@@ -67,6 +70,7 @@ export function Sala({
   urlConvite,
   soDiretor: soDiretorInicial,
   temCanal,
+  temChat,
   falhaAparelho,
   aoFecharAvisoAparelho,
   aoSair,
@@ -85,7 +89,7 @@ export function Sala({
 
       {!souHost && <AvisoPontoRecebido />}
 
-      {souHost ? <PainelDiretor transmissaoId={transmissaoId} /> : <PainelConvidado />}
+      {souHost ? <PainelDiretor transmissaoId={transmissaoId} temChat={temChat} /> : <PainelConvidado />}
 
       <nav
         aria-label="Controles"
@@ -107,8 +111,9 @@ export function Sala({
 }
 
 /** Diretor: prévia + disposições à esquerda, pessoas (palco/bastidor) à direita. */
-function PainelDiretor({ transmissaoId }: { transmissaoId: string }) {
+function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temChat: boolean }) {
   const { cena, alterar, erro } = useControleCena(transmissaoId);
+  const [abaLateral, setAbaLateral] = useState<"pessoas" | "comentarios">("pessoas");
   const ponto = usePonto(transmissaoId);
   const mudo = useAlternarMudoParaLive(transmissaoId);
   const participantes = useRemoteParticipants();
@@ -149,16 +154,54 @@ function PainelDiretor({ transmissaoId }: { transmissaoId: string }) {
           aoEscolher={(layoutId) => alterar((c) => ({ ...c, layoutId }))}
         />
       </div>
-      <PainelPessoas
-        cena={cena}
-        transmissaoId={transmissaoId}
-        alterar={alterar}
-        controles={{
-          alternarMudo: (identity, valor) => void mudo.alternar(identity, valor),
-          mudoPendente: mudo.pendente,
-          ponto,
-        }}
-      />
+      <div className="flex min-w-0 flex-col gap-3">
+        <div role="tablist" aria-label="Painel lateral" className="vidro flex gap-1 rounded-xl p-1">
+          {(
+            [
+              ["pessoas", "Pessoas"],
+              ["comentarios", "Comentários"],
+            ] as const
+          ).map(([id, rotulo]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={abaLateral === id}
+              onClick={() => setAbaLateral(id)}
+              className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                abaLateral === id ? "bg-white/10 text-texto" : "text-texto-suave hover:text-texto"
+              }`}
+            >
+              {rotulo}
+            </button>
+          ))}
+        </div>
+        {/* As duas abas ficam montadas: o chat continua chegando com a aba fechada. */}
+        <div hidden={abaLateral !== "pessoas"}>
+          <PainelPessoas
+            cena={cena}
+            transmissaoId={transmissaoId}
+            alterar={alterar}
+            controles={{
+              alternarMudo: (identity, valor) => void mudo.alternar(identity, valor),
+              mudoPendente: mudo.pendente,
+              ponto,
+            }}
+          />
+        </div>
+        <section hidden={abaLateral !== "comentarios"} aria-label="Comentários" className="vidro rounded-xl p-3 sm:p-4">
+          <PainelComentarios
+            transmissaoId={transmissaoId}
+            temChat={temChat}
+            lerYoutube={abaLateral === "comentarios" || cena.status === "ao_vivo" || cena.status === "intervalo"}
+            destaque={{
+              atual: cena.comentarioDestacado,
+              mostrar: (comentario) => alterar((c) => ({ ...c, comentarioDestacado: comentario })),
+              ocultar: () => alterar((c) => ({ ...c, comentarioDestacado: null })),
+            }}
+          />
+        </section>
+      </div>
     </main>
   );
 }
@@ -170,6 +213,10 @@ function PainelConvidado() {
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center gap-4 p-3 sm:p-5 deitado:gap-2 deitado:p-2">
       <EstadoNoPalco cena={cena} />
       <Previa cena={cena} />
+      <section aria-label="Chat da equipe" className="vidro w-full max-w-2xl rounded-xl p-3 sm:p-4">
+        <h2 className="mb-2 text-sm font-semibold">Chat da equipe</h2>
+        <ChatEstudio />
+      </section>
     </main>
   );
 }
