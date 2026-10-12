@@ -88,7 +88,7 @@ export function PainelPessoas({ cena, transmissaoId, alterar, controles }: Props
                 <>
                   {i > 0 && (
                     <BotaoAcao onClick={() => destacar(id)} rotulo="Primeiro lugar no layout">
-                      <Star weight="fill" />
+                      <Star weight="bold" />
                     </BotaoAcao>
                   )}
                   <BotaoAcao onClick={() => tirarDoPalco(id)}>Tirar</BotaoAcao>
@@ -184,7 +184,7 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
         )}
         {mudoParaLive && (
           <span className="absolute top-1 left-1 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[0.7rem] font-semibold text-ensaio backdrop-blur-sm">
-            <SpeakerSimpleSlash weight="fill" className="size-3.5" aria-hidden />
+            <SpeakerSimpleSlash weight="bold" className="size-3.5" aria-hidden />
             Mudo para a live
           </span>
         )}
@@ -196,7 +196,7 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
       </div>
       <div className="min-w-0 px-0.5">
         <p className="flex items-center gap-1.5 truncate text-sm font-semibold">
-          {micMudo && <MicrophoneSlash weight="fill" className="size-3.5 shrink-0 text-no-ar" aria-label="Microfone desligado" />}
+          {micMudo && <MicrophoneSlash weight="bold" className="size-3.5 shrink-0 text-no-ar" aria-label="Microfone desligado" />}
           <span className="truncate">
             {nome}
             {local && <span className="font-normal text-texto-suave"> (você)</span>}
@@ -247,7 +247,7 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
                 title="Editar etiqueta"
                 className="rounded p-0.5 hover:bg-white/10 hover:text-texto"
               >
-                <PencilSimple weight="fill" className="size-3.5" />
+                <PencilSimple weight="bold" className="size-3.5" />
               </button>
               <button
                 type="button"
@@ -257,7 +257,7 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
                 title={etiquetaOculta ? "Nome escondido na live" : "Esconder o nome na live"}
                 className={`rounded p-0.5 hover:bg-white/10 ${etiquetaOculta ? "text-ensaio" : "hover:text-texto"}`}
               >
-                {etiquetaOculta ? <EyeSlash weight="fill" className="size-3.5" /> : <Eye weight="fill" className="size-3.5" />}
+                {etiquetaOculta ? <EyeSlash weight="bold" className="size-3.5" /> : <Eye weight="bold" className="size-3.5" />}
               </button>
             </>
           )}
@@ -271,7 +271,7 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
           desativado={controles.mudoPendente === identity}
           rotulo={mudoParaLive ? "Voltar a ser ouvido na live" : "Mudo para a live (a equipe continua ouvindo)"}
         >
-          <SpeakerSimpleSlash weight="fill" />
+          <SpeakerSimpleSlash weight="bold" />
         </BotaoAcao>
         {comVideo && (
           <BotaoAcao
@@ -280,7 +280,7 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
             desativado={controles.espelhoPendente === identity}
             rotulo={espelhado ? "Desespelhar a câmera (também na live)" : "Espelhar a câmera (também na live)"}
           >
-            <FlipHorizontal weight="fill" />
+            <FlipHorizontal weight="bold" />
           </BotaoAcao>
         )}
         {!local && identity && (
@@ -290,7 +290,7 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
             desativado={ponto.conectando}
             rotulo={pontoNestaPessoa ? "Desligar o ponto" : "Falar só com esta pessoa (ponto)"}
           >
-            <Headset weight="fill" />
+            <Headset weight="bold" />
           </BotaoAcao>
         )}
         <div className="flex flex-1 items-center gap-1 [&>*:last-child]:flex-1">{acoes}</div>
@@ -345,7 +345,7 @@ function BotaoRemover({ transmissaoId, identity, nome }: { transmissaoId: string
         title="Remover da sala"
         className="rounded-md bg-black/50 p-1.5 text-white/80 backdrop-blur-sm hover:bg-no-ar hover:text-white"
       >
-        <UserMinus weight="fill" className="size-4" />
+        <UserMinus weight="bold" className="size-4" />
       </button>
     );
   }

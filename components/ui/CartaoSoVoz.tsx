@@ -18,13 +18,19 @@ type Props = { nome: string; falando: boolean; className?: string };
 export function CartaoSoVoz({ nome, falando, className = "" }: Props) {
   return (
     // Tamanhos em cqmin: o avatar acompanha o quadro, do miniatura ao tela cheia.
-    <div className={`flex items-center justify-center bg-superficie-2 [container-type:size] ${className}`}>
+    <div
+      className={`flex items-center justify-center [container-type:size] ${className}`}
+      style={{ background: "radial-gradient(70% 90% at 50% 40%, #1c2a45 0%, #111a2c 60%, #0c1322 100%)" }}
+    >
       <span
-        className={`flex aspect-square w-[38cqmin] items-center justify-center rounded-full bg-destaque text-[14cqmin] font-bold text-destaque-texto outline-offset-[2.5cqmin] transition-[outline-color] duration-150 ${
-          falando ? "outline-[2cqmin] outline-pronto" : "outline-[2cqmin] outline-transparent"
+        className={`relative flex aspect-square w-[34cqmin] items-center justify-center rounded-full text-[12cqmin] font-semibold tracking-tight text-texto ring-[0.6cqmin] transition-[box-shadow,--tw-ring-color] duration-200 ${
+          falando
+            ? "ring-pronto shadow-[0_0_0_2.5cqmin_rgb(16_185_129/0.18),0_0_8cqmin_rgb(16_185_129/0.35)]"
+            : "ring-white/15 shadow-none"
         }`}
+        style={{ background: "linear-gradient(150deg, rgb(59 130 246 / 0.45), rgb(59 130 246 / 0.12) 70%)" }}
       >
-        {nome.trim() ? iniciais(nome) : <User weight="fill" className="size-1/2" aria-hidden />}
+        {nome.trim() ? iniciais(nome) : <User weight="bold" className="size-[45%] text-texto-suave" aria-hidden />}
       </span>
     </div>
   );

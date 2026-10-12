@@ -66,7 +66,7 @@ export function TelasCompartilhadas({ cena, alterar }: { cena: Cena; alterar: Al
   return (
     <section aria-labelledby="titulo-telas" className="vidro flex flex-col gap-3 rounded-xl p-3 sm:p-4">
       <h2 id="titulo-telas" className="flex items-center gap-2 text-sm font-semibold">
-        <Monitor weight="fill" className="size-4 text-destaque" aria-hidden />
+        <Monitor weight="bold" className="size-4 text-destaque" aria-hidden />
         Telas compartilhadas
       </h2>
       <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,12rem),1fr))] gap-2">

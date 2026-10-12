@@ -289,7 +289,7 @@ function Biblioteca({ itens, emUso, aoUsar, aoTirar, aoExcluir, rotuloUsar = "Us
                 // eslint-disable-next-line @next/next/no-img-element -- miniatura do próprio arquivo
                 <img src={a.url} alt="" className="size-full object-contain" />
               ) : (
-                <FilmStrip weight="fill" className="size-4 text-texto-suave" aria-hidden />
+                <FilmStrip weight="bold" className="size-4 text-texto-suave" aria-hidden />
               )}
             </span>
             <span className="min-w-0 flex-1">
@@ -301,7 +301,7 @@ function Biblioteca({ itens, emUso, aoUsar, aoTirar, aoExcluir, rotuloUsar = "Us
               onClick={() => (ativo ? aoTirar() : aoUsar(a))}
               className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold ${ativo ? "text-ensaio hover:bg-ensaio/10" : "text-destaque hover:bg-destaque/10"}`}
             >
-              {ativo ? <Stop weight="fill" className="size-3.5" /> : <Play weight="fill" className="size-3.5" />}
+              {ativo ? <Stop weight="bold" className="size-3.5" /> : <Play weight="bold" className="size-3.5" />}
               {ativo ? rotuloTirar : rotuloUsar}
             </button>
             <button
@@ -310,7 +310,7 @@ function Biblioteca({ itens, emUso, aoUsar, aoTirar, aoExcluir, rotuloUsar = "Us
               onClick={() => aoExcluir(a)}
               className="rounded p-1 text-texto-suave hover:bg-no-ar/15 hover:text-no-ar"
             >
-              <Trash weight="fill" className="size-4" />
+              <Trash weight="bold" className="size-4" />
             </button>
           </li>
         );

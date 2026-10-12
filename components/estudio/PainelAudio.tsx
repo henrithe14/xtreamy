@@ -142,7 +142,7 @@ function SecaoMusica({ cena, alterar, musicas, aoEnviar, aoExcluir }: PropsMusic
                 )
               }
             >
-              {m.pausadaEm === null ? <Pause weight="fill" className="size-4" /> : <Play weight="fill" className="size-4" />}
+              {m.pausadaEm === null ? <Pause weight="bold" className="size-4" /> : <Play weight="bold" className="size-4" />}
               {m.pausadaEm === null ? "Pausar" : "Continuar"}
             </BotaoAcao>
             <BotaoAcao
@@ -154,11 +154,11 @@ function SecaoMusica({ cena, alterar, musicas, aoEnviar, aoExcluir }: PropsMusic
                 })
               }
             >
-              <SkipForward weight="fill" className="size-4" />
+              <SkipForward weight="bold" className="size-4" />
               Próxima
             </BotaoAcao>
             <BotaoAcao onClick={() => alterar((c) => ({ ...c, musica: null }))}>
-              <Stop weight="fill" className="size-4" />
+              <Stop weight="bold" className="size-4" />
               Parar
             </BotaoAcao>
           </div>
@@ -196,7 +196,7 @@ function SecaoMusica({ cena, alterar, musicas, aoEnviar, aoExcluir }: PropsMusic
                 key={a.id}
                 className={`flex items-center gap-2 rounded-md p-1.5 text-sm ${tocando ? "bg-destaque/10 ring-1 ring-destaque/30 ring-inset" : "bg-white/[0.04]"}`}
               >
-                <MusicNotes weight="fill" className={`size-4 shrink-0 ${tocando ? "text-destaque" : "text-texto-suave"}`} aria-hidden />
+                <MusicNotes weight="bold" className={`size-4 shrink-0 ${tocando ? "text-destaque" : "text-texto-suave"}`} aria-hidden />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate">{a.nome}</span>
                   {a.duracao && <span className="text-xs text-texto-suave tabular-nums">{formatarDuracao(a.duracao)}</span>}
@@ -210,7 +210,7 @@ function SecaoMusica({ cena, alterar, musicas, aoEnviar, aoExcluir }: PropsMusic
                     onClick={() => void tocarDesde(a)}
                     className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-destaque hover:bg-destaque/10 disabled:opacity-50"
                   >
-                    <Play weight="fill" className="size-3.5" />
+                    <Play weight="bold" className="size-3.5" />
                     Tocar
                   </button>
                 )}
@@ -220,7 +220,7 @@ function SecaoMusica({ cena, alterar, musicas, aoEnviar, aoExcluir }: PropsMusic
                   onClick={() => aoExcluir(a)}
                   className="rounded p-1 text-texto-suave hover:bg-no-ar/15 hover:text-no-ar"
                 >
-                  <Trash weight="fill" className="size-4" />
+                  <Trash weight="bold" className="size-4" />
                 </button>
               </li>
             );
@@ -280,7 +280,7 @@ function SecaoEfeitos({ efeitos, ouvindo, aoEnviar, aoExcluir }: PropsEfeitos) {
                 onClick={() => void disparar(a)}
                 className="flex min-h-16 w-full flex-col items-center justify-center gap-1 rounded-md bg-white/[0.06] px-2 py-2 text-xs font-semibold ring-1 ring-white/10 ring-inset hover:bg-white/10 active:bg-destaque/25"
               >
-                <SpeakerHigh weight="fill" className="size-5 text-destaque" aria-hidden />
+                <SpeakerHigh weight="bold" className="size-5 text-destaque" aria-hidden />
                 <span className="line-clamp-2 text-center break-all">{a.nome}</span>
               </button>
               <button
@@ -289,7 +289,7 @@ function SecaoEfeitos({ efeitos, ouvindo, aoEnviar, aoExcluir }: PropsEfeitos) {
                 onClick={() => aoExcluir(a)}
                 className="absolute top-1 right-1 rounded p-1 text-texto-suave opacity-0 group-hover:opacity-100 hover:bg-no-ar/15 hover:text-no-ar focus-visible:opacity-100"
               >
-                <Trash weight="fill" className="size-3.5" />
+                <Trash weight="bold" className="size-3.5" />
               </button>
             </li>
           ))}

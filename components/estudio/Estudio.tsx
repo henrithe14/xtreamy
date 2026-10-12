@@ -84,7 +84,7 @@ export function Estudio(props: Props) {
   if (conexao.estado === "erro") {
     return (
       <TelaCentral>
-        <WarningCircle weight="fill" className="size-10 text-no-ar" aria-hidden />
+        <WarningCircle weight="bold" className="size-10 text-no-ar" aria-hidden />
         <h1 className="text-2xl font-semibold tracking-tight">Não deu para entrar</h1>
         <p className="text-texto-suave">{conexao.mensagem}</p>
         <Botao variante="secundario" onClick={() => window.location.reload()}>
@@ -166,9 +166,9 @@ function TelaSaida({ saida, papel, urlEntrar }: { saida: Saida; papel: PapelSala
   return (
     <TelaCentral>
       {saida === "removido" ? (
-        <UserMinus weight="fill" className="size-10 text-no-ar" aria-hidden />
+        <UserMinus weight="bold" className="size-10 text-no-ar" aria-hidden />
       ) : (
-        <SignOut weight="fill" className="size-10 text-texto-suave" aria-hidden />
+        <SignOut weight="bold" className="size-10 text-texto-suave" aria-hidden />
       )}
       <h1 className="text-2xl font-semibold tracking-tight">{titulo}</h1>
       <p className="text-texto-suave">{texto}</p>

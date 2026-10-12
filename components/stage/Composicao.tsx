@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import {
   AudioTrack,
+  useIsMuted,
   useIsSpeaking,
   useParticipantAttribute,
   useParticipantInfo,
@@ -19,6 +20,7 @@ import { FundoEnviado, LogoLive, MidiaTelaCheia, OverlayLive, VinhetaLive } from
 import { obterLayout, slotsGrade, type Slot } from "@/lib/layouts";
 import { ATRIBUTO_AUDIO_PRIVADO, ATRIBUTO_ESPELHAR, lerMetadados } from "@/lib/participante";
 import { CartaoSoVoz } from "@/components/ui/CartaoSoVoz";
+import { MicrophoneSlash, SpeakerSimpleSlash, VideoCameraSlash } from "@phosphor-icons/react";
 
 /**
  * Quem aparece de fato: está em noPalco, está na sala, não é "só diretor" e cabe no
@@ -62,7 +64,7 @@ export function Composicao({ cena, previa = false, comSom = false, aoTerminarVin
   const layout = obterLayout(cena.layoutId);
   const tela = useTelaNaLive(cena);
   // Layout de apresentação sem tela no ar: as pessoas ficam em grade.
-  const slots = layout.apresentacao && !tela ? slotsGrade(palco.length) : layout.slots(palco.length);
+  const slots = layout.apresentacao && !tela ? slotsGrade(palco.length) : layout.slots(palco.length, cena.tamanhoSolo);
   const slotTela = tela && layout.apresentacao ? layout.apresentacao(palco.length) : undefined;
   const cameras = useTracks([Track.Source.Camera], { onlySubscribed: false });
 
@@ -90,6 +92,7 @@ export function Composicao({ cena, previa = false, comSom = false, aoTerminarVin
               estilo={cena.estilo}
               cores={cena.cores}
               mostrarEtiqueta={!cena.etiquetasOcultas.includes(p.identity)}
+              previa={previa}
             />
           ),
       )}
@@ -204,9 +207,11 @@ type PropsSlot = {
   estilo: Estilo;
   cores: CoresMarca;
   mostrarEtiqueta: boolean;
+  /** Prévia do estúdio: mostra o estado da pessoa ao lado do nome (nunca na live). */
+  previa: boolean;
 };
 
-function SlotPessoa({ participante, slot, camera, estilo, cores, mostrarEtiqueta }: PropsSlot) {
+function SlotPessoa({ participante, slot, camera, estilo, cores, mostrarEtiqueta, previa }: PropsSlot) {
   const { name, metadata } = useParticipantInfo({ participant: participante });
   const { etiqueta } = lerMetadados(metadata);
   const falando = useIsSpeaking(participante);
@@ -245,14 +250,43 @@ function SlotPessoa({ participante, slot, camera, estilo, cores, mostrarEtiqueta
         )}
       </div>
 
-      {mostrarEtiqueta && (
+      {(mostrarEtiqueta || previa) && (
         <div
-          className={`absolute bottom-[5%] max-w-[90%] ${circulo ? "left-1/2 -translate-x-1/2" : "left-[3%]"}`}
+          className={`absolute bottom-[5%] flex max-w-[90%] items-end gap-[0.5cqw] ${circulo ? "left-1/2 -translate-x-1/2" : "left-[3%]"}`}
         >
-          <EtiquetaNome nome={nome} etiqueta={etiqueta} tema={estilo.tema} cores={cores} />
+          {mostrarEtiqueta && <EtiquetaNome nome={nome} etiqueta={etiqueta} tema={estilo.tema} cores={cores} />}
+          {previa && <EstadoNaPrevia participante={participante} comVideo={comVideo} />}
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Só na prévia do estúdio: microfone desligado, câmera desligada e "mudo para a live",
+ * ao lado do nome. O /stage nunca mostra (não vai ao ar).
+ */
+function EstadoNaPrevia({ participante, comVideo }: { participante: Participant; comVideo: boolean }) {
+  const micMudo = useIsMuted({ participant: participante, source: Track.Source.Microphone });
+  const mudoParaLive = useParticipantAttribute(ATRIBUTO_AUDIO_PRIVADO, { participant: participante }) === "1";
+  const itens = [
+    micMudo && { Icone: MicrophoneSlash, rotulo: "Microfone desligado", cor: "text-no-ar" },
+    !comVideo && { Icone: VideoCameraSlash, rotulo: "Câmera desligada", cor: "text-texto-suave" },
+    mudoParaLive && { Icone: SpeakerSimpleSlash, rotulo: "Mudo para a live", cor: "text-ensaio" },
+  ].filter((i) => i !== false);
+  if (itens.length === 0) return null;
+  return (
+    <span className="flex shrink-0 gap-[0.3cqw]">
+      {itens.map(({ Icone, rotulo, cor }) => (
+        <span
+          key={rotulo}
+          title={rotulo}
+          className={`flex size-[2.2cqw] min-h-5 min-w-5 items-center justify-center rounded-[0.4cqw] bg-black/70 ring-1 ring-white/15 backdrop-blur-sm ${cor}`}
+        >
+          <Icone weight="bold" className="size-[60%]" aria-label={rotulo} />
+        </span>
+      ))}
+    </span>
   );
 }
 

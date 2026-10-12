@@ -123,7 +123,7 @@ export function Sala({
         <BotaoApresentar />
         {souHost && urlConvite && <BotaoConvidar transmissaoId={transmissaoId} urlInicial={urlConvite} />}
         <BotaoBarra rotulo="Sair" perigo onClick={aoSair}>
-          <SignOut weight="fill" />
+          <SignOut weight="bold" />
         </BotaoBarra>
       </nav>
 
@@ -163,7 +163,7 @@ function PainelDiretor({ transmissaoId, temChat, ouvindo, aoAlternarOuvir }: Pro
             role="status"
             className="flex flex-wrap items-center gap-3 rounded-xl bg-destaque/10 px-4 py-2.5 text-sm ring-1 ring-destaque/30 ring-inset"
           >
-            <Headset weight="fill" className="size-5 text-destaque" aria-hidden />
+            <Headset weight="bold" className="size-5 text-destaque" aria-hidden />
             <span className="flex-1">
               {ponto.conectando
                 ? "Ligando o ponto…"
@@ -198,6 +198,8 @@ function PainelDiretor({ transmissaoId, temChat, ouvindo, aoAlternarOuvir }: Pro
         <TelasCompartilhadas cena={cena} alterar={alterar} />
         <SeletorLayout
           layoutId={cena.layoutId}
+          tamanhoSolo={cena.tamanhoSolo}
+          aoMudarTamanhoSolo={(tamanhoSolo) => alterar((c) => ({ ...c, tamanhoSolo }))}
           pessoasNoPalco={cena.noPalco.length}
           aoEscolher={(layoutId) => alterar((c) => ({ ...c, layoutId }))}
         />
@@ -370,7 +372,7 @@ const TEXTO_FALHA: Record<MediaDeviceFailure, string> = {
 function AvisoAparelho({ falha, aoFechar }: { falha: MediaDeviceFailure; aoFechar: () => void }) {
   return (
     <div role="alert" className="flex items-start gap-3 bg-no-ar/10 px-4 py-2.5 text-no-ar sm:items-center">
-      <WarningCircle weight="fill" className="mt-0.5 size-5 shrink-0 sm:mt-0" aria-hidden />
+      <WarningCircle weight="bold" className="mt-0.5 size-5 shrink-0 sm:mt-0" aria-hidden />
       <p className="flex-1 text-sm">{TEXTO_FALHA[falha]}</p>
       <button type="button" onClick={aoFechar} aria-label="Fechar aviso" className="rounded p-1 hover:bg-no-ar/15">
         <X weight="bold" className="size-4" />
@@ -386,7 +388,7 @@ function AvisoSom() {
   if (canPlayAudio) return null;
   return (
     <div role="alert" className="flex flex-wrap items-center justify-center gap-3 bg-ensaio/15 px-4 py-2 text-ensaio">
-      <SpeakerSimpleSlash weight="fill" className="size-5" aria-hidden />
+      <SpeakerSimpleSlash weight="bold" className="size-5" aria-hidden />
       <span>O navegador pausou o som da sala.</span>
       <Botao variante="secundario" onClick={() => void startAudio()}>
         Ativar som
@@ -403,7 +405,7 @@ function AlternarMidia({ fonte }: { fonte: Track.Source.Microphone | Track.Sourc
 
   return (
     <BotaoBarra rotulo={rotulo} ligado={enabled} desativado={pending} onClick={() => void toggle()}>
-      <Icone weight="fill" />
+      <Icone weight="bold" />
     </BotaoBarra>
   );
 }
@@ -442,7 +444,7 @@ function BotaoModoDiretor({ transmissaoId, soDiretor }: { transmissaoId: string;
       }
       className="inline-flex min-h-9 items-center gap-1.5 rounded-md bg-white/[0.06] px-3 text-sm font-medium ring-1 ring-white/10 ring-inset hover:bg-white/10 disabled:opacity-50"
     >
-      <UserFocus weight="fill" className="size-4" aria-hidden />
+      <UserFocus weight="bold" className="size-4" aria-hidden />
       {soDiretor ? "Só diretor" : "Diretor e apresentador"}
     </button>
   );
@@ -460,7 +462,7 @@ function BotaoMudoParaLive({ transmissaoId, codigo }: { transmissaoId: string; c
       desativado={pendente !== null}
       onClick={() => void alternar(localParticipant.identity, !mudo)}
     >
-      {mudo ? <IconeMudoLive weight="fill" /> : <SpeakerSimpleHigh weight="fill" />}
+      {mudo ? <IconeMudoLive weight="bold" /> : <SpeakerSimpleHigh weight="bold" />}
     </BotaoBarra>
   );
 }
@@ -486,7 +488,7 @@ function BotaoApresentar() {
       // Cancelar a escolha da tela não é erro.
       onClick={() => void Promise.resolve(toggle()).catch(() => undefined)}
     >
-      <Monitor weight="fill" />
+      <Monitor weight="bold" />
     </BotaoBarra>
   );
 }
@@ -503,7 +505,7 @@ function AvisoApresentando({ cena }: { cena: Cena }) {
         noAr ? "bg-pronto/10 text-pronto ring-pronto/25" : "bg-white/[0.04] text-texto-suave ring-white/10"
       }`}
     >
-      <Monitor weight="fill" className="size-5 shrink-0" aria-hidden />
+      <Monitor weight="bold" className="size-5 shrink-0" aria-hidden />
       {noAr
         ? "Sua tela está na live."
         : "Você está compartilhando a tela. O diretor decide quando ela aparece na live."}
@@ -524,7 +526,7 @@ function BotaoEspelhar({ transmissaoId, codigo }: { transmissaoId: string; codig
       desativado={pendente !== null}
       onClick={() => void alternar(localParticipant.identity, !espelhado, true)}
     >
-      <FlipHorizontal weight="fill" />
+      <FlipHorizontal weight="bold" />
     </BotaoBarra>
   );
 }
@@ -541,7 +543,7 @@ function FaixaPonto({ participante }: { participante: Parameters<typeof useIsSpe
   const falando = useIsSpeaking(participante);
   return (
     <div role="status" className="flex items-center justify-center gap-3 bg-destaque/15 px-4 py-2 text-sm font-semibold text-texto">
-      <Headset weight="fill" className={`size-5 text-destaque ${falando ? "tally-pulso" : ""}`} aria-hidden />
+      <Headset weight="bold" className={`size-5 text-destaque ${falando ? "tally-pulso" : ""}`} aria-hidden />
       Diretor falando com você (só você ouve, não vai para a live)
     </div>
   );

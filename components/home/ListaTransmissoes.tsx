@@ -30,7 +30,7 @@ export async function ListaTransmissoes() {
   } catch {
     return (
       <p className="flex items-center gap-3 rounded-xl bg-no-ar/10 px-4 py-4 text-no-ar ring-1 ring-no-ar/20 ring-inset">
-        <WarningCircle weight="fill" className="size-5 shrink-0" aria-hidden />
+        <WarningCircle weight="bold" className="size-5 shrink-0" aria-hidden />
         Não foi possível carregar suas transmissões. Recarregue a página para tentar de novo.
       </p>
     );
@@ -45,7 +45,7 @@ export async function ListaTransmissoes() {
   if (transmissoes.length === 0) {
     return (
       <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed border-white/15 bg-white/[0.02] px-6 py-10">
-        <VideoCamera weight="fill" className="size-8 text-texto-suave" aria-hidden />
+        <VideoCamera weight="bold" className="size-8 text-texto-suave" aria-hidden />
         <p className="font-semibold">Nenhuma transmissão ainda</p>
         <p className="max-w-[48ch] text-texto-suave">
           Crie a primeira para gerar o link de convite e chamar as pessoas para o estúdio.
@@ -66,7 +66,7 @@ export async function ListaTransmissoes() {
             <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-texto-suave">
               {t.agendada_para ? (
                 <span className="inline-flex items-center gap-1.5 font-medium text-texto">
-                  <CalendarBlank weight="fill" className="size-4 text-pronto" aria-hidden />
+                  <CalendarBlank weight="bold" className="size-4 text-texto-suave" aria-hidden />
                   Agendada para {formatoData.format(new Date(t.agendada_para))}
                 </span>
               ) : (
@@ -80,7 +80,7 @@ export async function ListaTransmissoes() {
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 hover:text-texto"
                 >
-                  <YoutubeLogo weight="fill" className="size-4 text-[#ff3d3d]" aria-hidden />
+                  <YoutubeLogo weight="bold" className="size-4 text-texto-suave" aria-hidden />
                   {(t.destino_id && canais.get(t.destino_id)) || "YouTube"}
                   <ArrowSquareOut weight="bold" className="size-3.5" aria-label="abre no YouTube Studio" />
                 </a>
@@ -94,7 +94,7 @@ export async function ListaTransmissoes() {
               href={`/t/${t.id}/entrar`}
               className="inline-flex min-h-11 items-center gap-2 rounded-md bg-destaque px-4 font-semibold text-destaque-texto shadow-[0_8px_24px_-12px_rgb(59_130_246/0.8)] transition-colors hover:bg-destaque-forte [&_svg]:size-5"
             >
-              <ArrowSquareIn weight="fill" aria-hidden />
+              <ArrowSquareIn weight="bold" aria-hidden />
               Entrar no estúdio
             </Link>
             {t.youtube_broadcast_id && <ConfigurarLive live={t} />}

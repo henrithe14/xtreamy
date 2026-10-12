@@ -37,7 +37,7 @@ export default function PaginaDestinos({ searchParams }: PageProps<"/destinos">)
             href="/api/youtube/conectar"
             className="inline-flex min-h-11 items-center gap-2 rounded-md bg-destaque px-4 font-semibold text-destaque-texto shadow-[0_8px_24px_-12px_rgb(59_130_246/0.8)] hover:bg-destaque-forte [&_svg]:size-5"
           >
-            <YoutubeLogo weight="fill" aria-hidden />
+            <YoutubeLogo weight="bold" aria-hidden />
             Conectar YouTube
           </a>
         </div>
@@ -59,7 +59,7 @@ async function Aviso({ searchParams }: Pick<PageProps<"/destinos">, "searchParam
   if (conectado) {
     return (
       <p role="status" className="flex items-center gap-3 rounded-xl bg-pronto/10 px-4 py-3 text-pronto ring-1 ring-pronto/25 ring-inset">
-        <CheckCircle weight="fill" className="size-5 shrink-0" aria-hidden />
+        <CheckCircle weight="bold" className="size-5 shrink-0" aria-hidden />
         Canal conectado. Agora você pode escolhê-lo ao criar uma transmissão.
       </p>
     );
@@ -67,7 +67,7 @@ async function Aviso({ searchParams }: Pick<PageProps<"/destinos">, "searchParam
   if (typeof erro === "string") {
     return (
       <p role="alert" className="flex items-center gap-3 rounded-xl bg-no-ar/10 px-4 py-3 text-no-ar ring-1 ring-no-ar/20 ring-inset">
-        <WarningCircle weight="fill" className="size-5 shrink-0" aria-hidden />
+        <WarningCircle weight="bold" className="size-5 shrink-0" aria-hidden />
         <span>
           {ERROS[erro] || (typeof msg === "string" && msg) || "Não foi possível conectar o canal. Tente de novo."}{" "}
           <span className="text-xs opacity-70">(código: {erro})</span>
@@ -90,7 +90,7 @@ async function ListaDestinos() {
   if (destinos.length === 0) {
     return (
       <div className="flex flex-col items-start gap-2 rounded-xl border border-dashed border-white/15 bg-white/[0.02] px-6 py-10">
-        <YoutubeLogo weight="fill" className="size-8 text-texto-suave" aria-hidden />
+        <YoutubeLogo weight="bold" className="size-8 text-texto-suave" aria-hidden />
         <p className="font-semibold">Nenhum canal conectado</p>
         <p className="max-w-[48ch] text-texto-suave">
           Conecte seu canal do YouTube para publicar as lives direto do estúdio.
@@ -108,7 +108,7 @@ async function ListaDestinos() {
             <img src={d.avatar_url} alt="" className="size-11 shrink-0 rounded-full" referrerPolicy="no-referrer" />
           ) : (
             <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/[0.06]">
-              <YoutubeLogo weight="fill" className="size-6 text-texto-suave" aria-hidden />
+              <YoutubeLogo weight="bold" className="size-6 text-texto-suave" aria-hidden />
             </span>
           )}
           <div className="min-w-0 flex-1">

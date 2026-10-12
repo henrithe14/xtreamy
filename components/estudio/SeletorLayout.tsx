@@ -1,17 +1,20 @@
 "use client";
 
-import { LAYOUTS, type Layout } from "@/lib/layouts";
+import { useEffect, useRef, useState } from "react";
+import { LAYOUTS, TAMANHO_SOLO, type Layout } from "@/lib/layouts";
 
-/** Quantas pessoas desenhar na miniatura de cada layout. */
+/** Quantas pessoas desenhar na miniatura quando o palco está vazio. */
 const EXEMPLO: Record<string, number> = { solo: 1, "lado-a-lado": 2, grade: 4, destaque: 4, apresentacao: 2, "so-tela": 0 };
 
 type Props = {
   layoutId: string;
   pessoasNoPalco: number;
   aoEscolher: (id: string) => void;
+  tamanhoSolo: number;
+  aoMudarTamanhoSolo: (tamanho: number) => void;
 };
 
-export function SeletorLayout({ layoutId, pessoasNoPalco, aoEscolher }: Props) {
+export function SeletorLayout({ layoutId, pessoasNoPalco, aoEscolher, tamanhoSolo, aoMudarTamanhoSolo }: Props) {
   const atual = LAYOUTS.find((l) => l.id === layoutId);
   const sobra = atual ? pessoasNoPalco - atual.maxPessoas : 0;
 
@@ -22,9 +25,17 @@ export function SeletorLayout({ layoutId, pessoasNoPalco, aoEscolher }: Props) {
       </h2>
       <div role="radiogroup" aria-labelledby="titulo-layouts" className="flex flex-wrap gap-2">
         {LAYOUTS.map((layout) => (
-          <BotaoLayout key={layout.id} layout={layout} ativo={layout.id === layoutId} aoEscolher={aoEscolher} />
+          <BotaoLayout
+            key={layout.id}
+            layout={layout}
+            ativo={layout.id === layoutId}
+            aoEscolher={aoEscolher}
+            pessoas={pessoasNoPalco}
+            tamanho={layout.id === "solo" ? tamanhoSolo : undefined}
+          />
         ))}
       </div>
+      {layoutId === "solo" && <TamanhoSolo valor={tamanhoSolo} aoMudar={aoMudarTamanhoSolo} />}
       {sobra > 0 && atual && (
         <p className="text-sm text-ensaio">
           {atual.nome} mostra até {atual.maxPessoas} {atual.maxPessoas === 1 ? "pessoa" : "pessoas"}.{" "}
@@ -35,9 +46,44 @@ export function SeletorLayout({ layoutId, pessoasNoPalco, aoEscolher }: Props) {
   );
 }
 
-function BotaoLayout({ layout, ativo, aoEscolher }: { layout: Layout; ativo: boolean; aoEscolher: (id: string) => void }) {
-  const n = EXEMPLO[layout.id] ?? Math.min(layout.maxPessoas, 4);
-  const slots = layout.slots(n);
+/** Solo: diminuir a câmera deixa o fundo aparecer em volta. Muda a cena quando o arraste para. */
+function TamanhoSolo({ valor, aoMudar }: { valor: number; aoMudar: (v: number) => void }) {
+  const [local, setLocal] = useState(valor);
+  const espera = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    // Acompanha mudanças vindas da cena.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLocal(valor);
+  }, [valor]);
+
+  return (
+    <label className="flex max-w-md items-center gap-3 text-sm">
+      <span className="shrink-0 font-medium text-texto-suave">Tamanho da câmera</span>
+      <input
+        type="range"
+        min={TAMANHO_SOLO.min}
+        max={TAMANHO_SOLO.max}
+        step={1}
+        value={local}
+        onChange={(e) => {
+          const v = Number(e.target.value);
+          setLocal(v);
+          window.clearTimeout(espera.current);
+          espera.current = window.setTimeout(() => aoMudar(v), 200);
+        }}
+        className="flex-1 accent-destaque"
+      />
+      <span className="w-10 text-right font-semibold tabular-nums">{local}%</span>
+    </label>
+  );
+}
+
+type PropsBotao = { layout: Layout; ativo: boolean; aoEscolher: (id: string) => void; pessoas: number; tamanho?: number };
+
+function BotaoLayout({ layout, ativo, aoEscolher, pessoas, tamanho }: PropsBotao) {
+  // A miniatura mostra como fica com quem está no palco agora.
+  const n = pessoas > 0 ? Math.min(pessoas, layout.maxPessoas) : (EXEMPLO[layout.id] ?? Math.min(layout.maxPessoas, 4));
+  const slots = layout.slots(n, tamanho);
   const tela = layout.apresentacao?.(n);
   return (
     <button

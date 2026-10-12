@@ -80,25 +80,25 @@ export function ControlesLive({ transmissaoId, cena, temCanal }: { transmissaoId
           disabled={!temCanal || Boolean(executando)}
           title={temCanal ? undefined : "Esta transmissão não tem canal do YouTube"}
         >
-          <Broadcast weight="fill" aria-hidden />
+          <Broadcast weight="bold" aria-hidden />
           {executando === "iniciar" ? "Iniciando…" : "Iniciar live"}
         </Botao>
       )}
       {cena.status === "ao_vivo" && (
         <Botao variante="secundario" onClick={() => void executar("intervalo")} disabled={Boolean(executando)}>
-          <Pause weight="fill" aria-hidden />
+          <Pause weight="bold" aria-hidden />
           Intervalo
         </Botao>
       )}
       {cena.status === "intervalo" && (
         <Botao onClick={() => void executar("retomar")} disabled={Boolean(executando)}>
-          <Play weight="fill" aria-hidden />
+          <Play weight="bold" aria-hidden />
           Retomar
         </Botao>
       )}
       {(cena.status === "ao_vivo" || cena.status === "intervalo") && (
         <Botao variante="fantasma" onClick={() => setConfirmarFim(true)} disabled={Boolean(executando)}>
-          <Stop weight="fill" aria-hidden />
+          <Stop weight="bold" aria-hidden />
           Encerrar
         </Botao>
       )}

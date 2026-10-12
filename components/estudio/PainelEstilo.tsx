@@ -244,7 +244,7 @@ function EstilosSalvos({ cena, alterar }: { cena: Cena; alterar: Alterar }) {
           className="min-h-10 min-w-0 flex-1 rounded-md border border-white/10 bg-black/20 px-3 text-sm focus:border-destaque focus:outline-none"
         />
         <Botao type="submit" variante="secundario" disabled={salvando || !nome.trim()}>
-          <FloppyDisk weight="fill" aria-hidden />
+          <FloppyDisk weight="bold" aria-hidden />
           Salvar
         </Botao>
       </form>
@@ -271,7 +271,7 @@ function EstilosSalvos({ cena, alterar }: { cena: Cena; alterar: Alterar }) {
                 onClick={() => void excluirEstilo(e.id).then(carregar)}
                 className="rounded p-1 text-texto-suave hover:bg-no-ar/15 hover:text-no-ar"
               >
-                <Trash weight="fill" className="size-4" />
+                <Trash weight="bold" className="size-4" />
               </button>
             </li>
           ))}

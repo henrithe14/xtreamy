@@ -114,15 +114,15 @@ function Conteudo({ transmissaoId, codigo, titulo, papel, preferencias, atualiza
           {!soDiretor && (
             <Botao variante="secundario" onClick={() => atualizar("soVoz", !preferencias.soVoz)}>
               {preferencias.soVoz ? (
-                <VideoCamera weight="fill" aria-hidden />
+                <VideoCamera weight="bold" aria-hidden />
               ) : (
-                <VideoCameraSlash weight="fill" aria-hidden />
+                <VideoCameraSlash weight="bold" aria-hidden />
               )}
               {preferencias.soVoz ? "Ligar câmera" : "Entrar só com voz"}
             </Botao>
           )}
           <p className="flex items-center gap-2 text-sm text-texto-suave">
-            <Headphones weight="fill" className="size-5 shrink-0" aria-hidden />
+            <Headphones weight="bold" className="size-5 shrink-0" aria-hidden />
             Use fones para evitar eco.
           </p>
         </div>
@@ -169,7 +169,7 @@ function Conteudo({ transmissaoId, codigo, titulo, papel, preferencias, atualiza
             id="microfone"
             tipo="audioinput"
             rotulo="Microfone"
-            icone={<Microphone weight="fill" />}
+            icone={<Microphone weight="bold" />}
             faixa={audio}
             liberado={permitido}
             valor={preferencias.microfoneId}
@@ -185,7 +185,7 @@ function Conteudo({ transmissaoId, codigo, titulo, papel, preferencias, atualiza
               id="alto-falante"
               tipo="audiooutput"
               rotulo="Alto-falante"
-              icone={<SpeakerHigh weight="fill" />}
+              icone={<SpeakerHigh weight="bold" />}
               liberado={permitido}
               valor={preferencias.altoFalanteId}
               aoMudar={mudarAltoFalante}
@@ -201,7 +201,7 @@ function Conteudo({ transmissaoId, codigo, titulo, papel, preferencias, atualiza
             id="camera"
             tipo="videoinput"
             rotulo="Câmera"
-            icone={<VideoCamera weight="fill" />}
+            icone={<VideoCamera weight="bold" />}
             faixa={video}
             liberado={permitido}
             valor={preferencias.cameraId}
@@ -304,7 +304,7 @@ function AvisoErro({ erro, aoTentar, aoSoVoz }: { erro: ErroMidia; aoTentar: () 
   return (
     <div role="alert" className="flex flex-col gap-3 rounded-xl bg-no-ar/10 px-4 py-3 ring-1 ring-no-ar/20 ring-inset">
       <p className="flex items-start gap-3 text-no-ar">
-        <WarningCircle weight="fill" className="mt-0.5 size-5 shrink-0" aria-hidden />
+        <WarningCircle weight="bold" className="mt-0.5 size-5 shrink-0" aria-hidden />
         {TEXTO_ERRO[erro]}
       </p>
       <div className="flex flex-wrap gap-2">

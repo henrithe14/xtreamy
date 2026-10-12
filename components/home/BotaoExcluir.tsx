@@ -28,7 +28,7 @@ export function BotaoExcluir({ id, titulo, temLiveNoYoutube }: { id: string; tit
   return (
     <>
       <Botao variante="fantasma" onClick={abrir} aria-label={`Excluir ${titulo}`} className="px-3">
-        <Trash weight="fill" aria-hidden />
+        <Trash weight="bold" aria-hidden />
       </Botao>
       <Dialogo aberto={aberto} aoFechar={() => setAberto(false)} titulo="Excluir transmissão?">
         <p className="mb-2">

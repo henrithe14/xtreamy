@@ -32,7 +32,7 @@ export function PainelComentarios({ transmissaoId, temChat, lerYoutube, destaque
     <div className="flex min-h-0 flex-col gap-3">
       {destaque.atual && (
         <div className="flex items-start gap-2 rounded-lg bg-destaque/10 p-2.5 text-sm ring-1 ring-destaque/30 ring-inset">
-          <Eye weight="fill" className="mt-0.5 size-4 shrink-0 text-destaque" aria-hidden />
+          <Eye weight="bold" className="mt-0.5 size-4 shrink-0 text-destaque" aria-hidden />
           <p className="min-w-0 flex-1">
             <span className="font-semibold">Na tela: {destaque.atual.autor}</span>
             <span className="line-clamp-2 text-texto-suave">{destaque.atual.texto}</span>
@@ -45,10 +45,10 @@ export function PainelComentarios({ transmissaoId, temChat, lerYoutube, destaque
 
       <div role="tablist" aria-label="Comentários" className="flex gap-1 rounded-md bg-black/20 p-1">
         <BotaoAba ativa={aba === "youtube"} onClick={() => setAba("youtube")}>
-          <YoutubeLogo weight="fill" /> YouTube
+          <YoutubeLogo weight="bold" /> YouTube
         </BotaoAba>
         <BotaoAba ativa={aba === "estudio"} onClick={() => setAba("estudio")}>
-          <ChatCircleText weight="fill" /> Estúdio
+          <ChatCircleText weight="bold" /> Estúdio
         </BotaoAba>
       </div>
 
@@ -181,7 +181,7 @@ export function ChatEstudio({ destaque }: { destaque?: Destaque }) {
           aria-label="Enviar mensagem"
           className="flex size-10 items-center justify-center rounded-md bg-destaque text-destaque-texto hover:bg-destaque-forte disabled:opacity-40"
         >
-          <PaperPlaneRight weight="fill" className="size-5" />
+          <PaperPlaneRight weight="bold" className="size-5" />
         </button>
       </form>
     </div>
@@ -226,7 +226,7 @@ function ItemComentario({ autor, avatar, texto, selo, naTela, aoMostrar, aoOcult
           title={naTela ? "Ocultar da tela" : "Mostrar na tela"}
           className={`shrink-0 rounded-md p-1.5 transition-opacity hover:bg-white/10 ${naTela ? "text-destaque" : "[@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100"}`}
         >
-          {naTela ? <EyeSlash weight="fill" className="size-4" /> : <Eye weight="fill" className="size-4" />}
+          {naTela ? <EyeSlash weight="bold" className="size-4" /> : <Eye weight="bold" className="size-4" />}
         </button>
       )}
     </li>

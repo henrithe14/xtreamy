@@ -2,7 +2,7 @@
 // Fica nos metadata da sala do LiveKit; só o servidor grava (a pedido do diretor).
 // Campos de artes, mídias, widgets etc. entram nas etapas correspondentes.
 
-import { LAYOUTS, LAYOUT_PADRAO } from "@/lib/layouts";
+import { LAYOUTS, LAYOUT_PADRAO, TAMANHO_SOLO } from "@/lib/layouts";
 import { ESTILO_PADRAO, validarBanner, validarEstilo, type Banner, type Estilo } from "@/lib/estilo";
 import { urlDeAtivo } from "@/lib/ativos";
 
@@ -82,6 +82,8 @@ export type Cena = {
   /** Cresce a cada alteração; serve para descartar respostas antigas. */
   versao: number;
   layoutId: string;
+  /** Layout Solo: tamanho da câmera em % do quadro (40–100). */
+  tamanhoSolo: number;
   /** Identities, na ordem dos slots. */
   noPalco: string[];
   /** Quem tem a tela compartilhada no ar (aparece em layouts de apresentação). */
@@ -107,6 +109,7 @@ export type Cena = {
 export const CENA_INICIAL: Cena = {
   versao: 0,
   layoutId: LAYOUT_PADRAO,
+  tamanhoSolo: TAMANHO_SOLO.padrao,
   noPalco: [],
   apresentacaoId: null,
   status: "ensaio",
@@ -232,6 +235,9 @@ export function validarCena(dado: unknown): Cena | null {
   if (!Array.isArray(c.noPalco) || c.noPalco.length > MAX_NO_PALCO) return null;
   if (!c.noPalco.every((id) => typeof id === "string" && id.length > 0 && id.length <= 64)) return null;
   if (new Set(c.noPalco).size !== c.noPalco.length) return null;
+  const tamanhoSolo = c.tamanhoSolo ?? TAMANHO_SOLO.padrao; // cenas antigas, sem o campo
+  if (typeof tamanhoSolo !== "number" || !Number.isInteger(tamanhoSolo)) return null;
+  if (tamanhoSolo < TAMANHO_SOLO.min || tamanhoSolo > TAMANHO_SOLO.max) return null;
   const apresentacaoId = c.apresentacaoId ?? null;
   if (apresentacaoId !== null && (typeof apresentacaoId !== "string" || !apresentacaoId || apresentacaoId.length > 64)) return null;
   if (typeof c.status !== "string" || !STATUS.includes(c.status)) return null;
@@ -252,6 +258,7 @@ export function validarCena(dado: unknown): Cena | null {
   return {
     versao: c.versao,
     layoutId: c.layoutId,
+    tamanhoSolo,
     noPalco: c.noPalco,
     apresentacaoId,
     status: c.status,

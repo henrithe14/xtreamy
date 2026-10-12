@@ -7,8 +7,8 @@ export type Layout = {
   id: string;
   nome: string;
   maxPessoas: number;
-  /** Slots para n pessoas no palco (n já limitado a maxPessoas). */
-  slots: (n: number) => Slot[];
+  /** Slots para n pessoas no palco (n já limitado a maxPessoas). `tamanho`: só o Solo usa. */
+  slots: (n: number, tamanho?: number) => Slot[];
   /**
    * Layout de apresentação: onde fica a tela compartilhada, para n pessoas no palco.
    * Sem tela no ar, as pessoas usam a grade.
@@ -17,6 +17,9 @@ export type Layout = {
 };
 
 const MARGEM = 1.5;
+
+/** Solo: tamanho da câmera em % do quadro (menor deixa o fundo aparecer em volta). */
+export const TAMANHO_SOLO = { min: 40, max: 100, padrao: 100 } as const;
 const MAX_PALCO = 10;
 
 /** Grade automática: colunas ≈ raiz de n; a última linha incompleta fica centralizada. */
@@ -41,7 +44,8 @@ export const LAYOUTS: Layout[] = [
     id: "solo",
     nome: "Solo",
     maxPessoas: 1,
-    slots: () => [{ x: 0, y: 0, w: 100, h: 100 }],
+    // Câmera centralizada, sempre 16:9; com menos de 100% o fundo aparece em volta.
+    slots: (_, tamanho = TAMANHO_SOLO.padrao) => [{ x: (100 - tamanho) / 2, y: (100 - tamanho) / 2, w: tamanho, h: tamanho }],
   },
   {
     id: "lado-a-lado",

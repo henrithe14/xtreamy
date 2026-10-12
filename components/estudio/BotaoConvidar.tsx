@@ -28,7 +28,7 @@ export function BotaoConvidar({ transmissaoId, urlInicial }: { transmissaoId: st
   return (
     <>
       <BotaoBarra rotulo="Convidar" onClick={() => setAberto(true)}>
-        <UserPlus weight="fill" />
+        <UserPlus weight="bold" />
       </BotaoBarra>
       <Dialogo aberto={aberto} aoFechar={() => setAberto(false)} titulo="Convidar para o estúdio">
         <p className="mb-3 text-texto-suave">

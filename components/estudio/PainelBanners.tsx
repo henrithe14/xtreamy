@@ -45,7 +45,7 @@ export function PainelBanners({ cena, alterar }: { cena: Cena; alterar: Alterar 
     <div className="flex flex-col gap-5">
       {cena.banner && (
         <div className="flex items-start gap-2 rounded-lg bg-destaque/10 p-2.5 text-sm ring-1 ring-destaque/30 ring-inset">
-          <Eye weight="fill" className="mt-0.5 size-4 shrink-0 text-destaque" aria-hidden />
+          <Eye weight="bold" className="mt-0.5 size-4 shrink-0 text-destaque" aria-hidden />
           <p className="min-w-0 flex-1">
             <span className="font-semibold">Na tela ({cena.banner.estilo === "faixa" ? "faixa" : "letreiro"})</span>
             <span className="line-clamp-2 text-texto-suave">{cena.banner.texto}</span>
@@ -84,7 +84,7 @@ export function PainelBanners({ cena, alterar }: { cena: Cena; alterar: Alterar 
         </div>
         <div className="flex flex-wrap gap-2">
           <Botao onClick={() => mostrar({ texto, estilo })} disabled={!texto.trim()}>
-            <Eye weight="fill" aria-hidden />
+            <Eye weight="bold" aria-hidden />
             Mostrar agora
           </Botao>
           <Botao
@@ -101,7 +101,7 @@ export function PainelBanners({ cena, alterar }: { cena: Cena; alterar: Alterar 
               })
             }
           >
-            <FloppyDisk weight="fill" aria-hidden />
+            <FloppyDisk weight="bold" aria-hidden />
             Salvar para depois
           </Botao>
         </div>
@@ -130,7 +130,7 @@ export function PainelBanners({ cena, alterar }: { cena: Cena; alterar: Alterar 
                     title={naTela ? "Ocultar da tela" : "Mostrar na tela"}
                     className={`rounded p-1.5 hover:bg-white/10 ${naTela ? "text-destaque" : ""}`}
                   >
-                    {naTela ? <EyeSlash weight="fill" className="size-4" /> : <Eye weight="fill" className="size-4" />}
+                    {naTela ? <EyeSlash weight="bold" className="size-4" /> : <Eye weight="bold" className="size-4" />}
                   </button>
                   <button
                     type="button"
@@ -138,7 +138,7 @@ export function PainelBanners({ cena, alterar }: { cena: Cena; alterar: Alterar 
                     onClick={() => void excluirBanner(b.id).then(carregar)}
                     className="rounded p-1.5 text-texto-suave hover:bg-no-ar/15 hover:text-no-ar"
                   >
-                    <Trash weight="fill" className="size-4" />
+                    <Trash weight="bold" className="size-4" />
                   </button>
                 </li>
               );

@@ -21,7 +21,7 @@ export function TestarSom({ altoFalanteId }: { altoFalanteId: string }) {
   return (
     <div className="flex flex-col gap-1">
       <Botao variante="secundario" onClick={testar} disabled={estado === "tocando"} className="w-full sm:w-auto">
-        <SpeakerHigh weight="fill" aria-hidden />
+        <SpeakerHigh weight="bold" aria-hidden />
         Testar som
       </Botao>
       {estado === "falhou" && (

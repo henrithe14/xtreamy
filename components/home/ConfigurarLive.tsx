@@ -43,7 +43,7 @@ export function ConfigurarLive({ live }: { live: DadosLive }) {
           setAberto(true);
         }}
       >
-        <GearSix weight="fill" aria-hidden />
+        <GearSix weight="bold" aria-hidden />
         Configurar live
       </Botao>
       <Dialogo aberto={aberto} aoFechar={() => setAberto(false)} titulo="Configurar live no YouTube">
@@ -156,7 +156,7 @@ function Formulario({ live, aoSalvar }: { live: DadosLive; aoSalvar: () => void 
               // eslint-disable-next-line @next/next/no-img-element -- prévia local/miniatura do YouTube
               <img src={capa ?? capaAtual} alt="Capa da live" className="size-full object-cover" />
             ) : (
-              <IconeImagem weight="fill" className="size-8 text-texto-suave" aria-hidden />
+              <IconeImagem weight="bold" className="size-8 text-texto-suave" aria-hidden />
             )}
           </div>
           <div className="flex min-w-0 flex-col gap-1">

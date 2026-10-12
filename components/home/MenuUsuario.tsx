@@ -10,7 +10,7 @@ export async function MenuUsuario() {
       <span className="hidden text-sm text-texto-suave sm:inline">{usuario.email}</span>
       <form action={sair}>
         <Botao type="submit" variante="fantasma">
-          <SignOut weight="fill" aria-hidden />
+          <SignOut weight="bold" aria-hidden />
           Sair
         </Botao>
       </form>

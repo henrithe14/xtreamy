@@ -27,7 +27,7 @@ Um estúdio de lives no navegador, no estilo dos estúdios de transmissão conhe
 | Camada | Escolha |
 |---|---|
 | App (front + back) | Next.js (App Router) + TypeScript |
-| Estilo | Tailwind CSS + componentes próprios; ícones flat `@phosphor-icons/react` (peso `fill`) |
+| Estilo | Tailwind CSS + componentes próprios; ícones de linha `@phosphor-icons/react` (peso `bold`) |
 | Login, banco e arquivos | **Supabase** (Auth, Postgres e Storage), um serviço só, com plano gratuito |
 | Vídeo/áudio em tempo real | LiveKit Cloud + `livekit-client` + `@livekit/components-react` |
 | Servidor (tokens, egress) | `livekit-server-sdk` em Route Handlers do Next |
@@ -177,6 +177,7 @@ Implementação (Etapa 7): o atributo `audioPrivado` (participant **attributes**
 
 ### Só voz
 - Participante sem câmera aparece como **cartão com avatar/iniciais, nome, etiqueta e anel animado** quando fala.
+- **Na prévia do estúdio** (nunca na live), ao lado do nome: ícones de microfone desligado, câmera desligada e "mudo para a live" (`EstadoNaPrevia` em `Composicao`).
 
 ## 8. Transmissão
 
@@ -207,6 +208,7 @@ type Layout = {
 ```
 
 - **Padrões do sistema:** solo, grade (2–10, automática), lado a lado, destaque + miniaturas, apresentação + câmeras, mídia em tela cheia.
+- **Solo ajustável:** `cena.tamanhoSolo` (40–100% do quadro, câmera 16:9 centralizada) deixa o fundo aparecer em volta. As miniaturas das disposições desenham quantas pessoas estão no palco agora.
 - **Editar / Novo:** editor visual com o canvas 16:9, arrastar e redimensionar slots, grade magnética, duplicar um padrão como ponto de partida e salvar em `layouts`.
 - Pessoas preenchem os slots `pessoa` na ordem de `noPalco`; o slot `apresentacao` recebe a tela compartilhada.
 - Implementação (Etapa 12): "Apresentar" na barra (qualquer pessoa; escondido sem `getDisplayMedia`, ex.: celular) publica a tela com o áudio da aba quando o Chrome oferecer. **Compartilhar não põe no ar:** o diretor vê "Telas compartilhadas" e clica "Mostrar na live", que grava `cena.apresentacaoId` e troca para o layout "Apresentação" se o atual não tiver lugar para a tela; "Tirar da live" volta para a grade. Se quem está no ar para de compartilhar ou sai, a tela sai da cena (por evento da sala). Layouts com `apresentacao` (slot da tela): "Apresentação" (tela + até 4 câmeras à direita) e "Só a tela" (ninguém aparece, mas quem está no palco continua sendo ouvido). Sem tela no ar, esses layouts põem as pessoas em grade. O áudio da tela só toca na live enquanto ela está no ar (`useTelaNaLive`).
@@ -233,7 +235,7 @@ Identidade **Xtreamy**: sala de controle escura, profissional e sóbria, com luz
   - **Tally (significado fixo, nunca decorativo):** no ar `#F0453A`, ensaio/intervalo `#F2B33D`, pronto `#10B981`. Mapeamento em `lib/transmissao.ts`, etiqueta em `components/ui/StatusTally.tsx`.
 - **Vidro:** utilitários `vidro` (painéis: branco 4,5%, borda branca 9%, blur 20px, fio de luz no topo) e `vidro-forte` (barras fixas e diálogos). Controles secundários: `bg-white/[0.06]` + `ring-white/10`. Campos: `bg-black/20` + `border-white/10`.
 - **Tipografia:** Archivo. Títulos em `font-semibold tracking-tight`, tamanhos contidos (nada de títulos gigantes); largura expandida (`fonte-larga`) só no nome Xtreamy. Números tabulares para tempos.
-- **Ícones:** Phosphor, peso `fill` (flat). Em Server Components importar de `@phosphor-icons/react/ssr`.
+- **Ícones:** Phosphor, peso `bold` (linha; o `fill` parecia emoji). Cor só quando tem significado (tally, erro, mudo), nunca de enfeite. Em Server Components importar de `@phosphor-icons/react/ssr`.
 - **Marcas de canto** (área segura) só em volta do que vai ao ar.
 - **Texto:** frases simples em português, sem travessões decorativos, sem caixa-alta em rótulos.
 - Cantos: `rounded-md` em controles, `rounded-xl` em painéis; foco visível; respeitar `prefers-reduced-motion`.

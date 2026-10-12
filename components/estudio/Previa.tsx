@@ -66,7 +66,7 @@ export function Previa({ cena, urlSaida, aoTerminarVinheta, ouvindo = false, aoA
                 ouvindo ? "bg-destaque/20 text-texto ring-1 ring-destaque" : "text-texto-suave hover:bg-white/[0.06] hover:text-texto"
               }`}
             >
-              <Headphones weight="fill" className="size-4" aria-hidden />
+              <Headphones weight="bold" className="size-4" aria-hidden />
               <span className="deitado:sr-only">{ouvindo ? "Ouvindo a live" : "Ouvir a live"}</span>
             </button>
           )}
