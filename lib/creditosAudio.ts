@@ -1,0 +1,37 @@
+// Créditos da biblioteca padrão (CC0). Gerado a partir do catálogo da biblioteca.
+
+export type CreditoAudio = { tipo: "musica" | "efeito"; nome: string; autor: string; pagina: string };
+
+export const CREDITOS_AUDIO: CreditoAudio[] = [
+  { tipo: "musica", nome: "Lo-fi tranquilo", autor: "omfgdude", pagina: "https://opengameart.org/node/94031" },
+  { tipo: "musica", nome: "Lo-fi noturno", autor: "omfgdude", pagina: "https://opengameart.org/node/94840" },
+  { tipo: "musica", nome: "Sherwood (chill)", autor: "zesona (Chris Murphy)", pagina: "https://opengameart.org/content/sherwood" },
+  { tipo: "musica", nome: "Nova ideia (corporativo leve)", autor: "hernandack", pagina: "https://opengameart.org/content/short-loops-background-music-pack" },
+  { tipo: "musica", nome: "Só dizendo (leve)", autor: "hernandack", pagina: "https://opengameart.org/content/short-loops-background-music-pack" },
+  { tipo: "musica", nome: "Abertura swing", autor: "hernandack", pagina: "https://opengameart.org/content/short-loops-background-music-pack" },
+  { tipo: "musica", nome: "Poeira de inverno (eletrônico calmo)", autor: "hernandack", pagina: "https://opengameart.org/content/short-loops-background-music-pack" },
+  { tipo: "musica", nome: "Música de elevador (volto logo)", autor: "Pro Sensory", pagina: "https://opengameart.org/content/elevator-music" },
+  { tipo: "musica", nome: "Música de elevador 2", autor: "Pro Sensory", pagina: "https://opengameart.org/content/elevator-music-2" },
+  { tipo: "musica", nome: "Só você e eu (violão)", autor: "Pro Sensory", pagina: "https://opengameart.org/content/just-you-and-me-guitar" },
+  { tipo: "musica", nome: "Piano calmo", autor: "cynicmusic", pagina: "https://opengameart.org/content/calm-piano-1-vaporware" },
+  { tipo: "musica", nome: "Jazz de improviso", autor: "Pro Sensory", pagina: "https://opengameart.org/content/jazz-improvisation-looped" },
+  { tipo: "efeito", nome: "Aplausos", autor: "Joseph Sardin", pagina: "https://bigsoundbank.com/applause-from-40-people-6-s3522.html" },
+  { tipo: "efeito", nome: "Risada da plateia", autor: "Nox_Sound", pagina: "https://freesound.org/people/Nox_Sound/sounds/752711/" },
+  { tipo: "efeito", nome: "Risada", autor: "jayfrosting", pagina: "https://freesound.org/people/jayfrosting/sounds/333403/" },
+  { tipo: "efeito", nome: "Fanfarra de sucesso", autor: "FunWithSound", pagina: "https://freesound.org/people/FunWithSound/sounds/456966/" },
+  { tipo: "efeito", nome: "Missão cumprida", autor: "qubodup", pagina: "https://freesound.org/people/qubodup/sounds/166540/" },
+  { tipo: "efeito", nome: "Resposta errada", autor: "Breviceps", pagina: "https://freesound.org/people/Breviceps/sounds/493163/" },
+  { tipo: "efeito", nome: "Buzzer curto", autor: "-Andreas", pagina: "https://freesound.org/people/-Andreas/sounds/650842/" },
+  { tipo: "efeito", nome: "Rufar de tambor", autor: "HoBoTrails", pagina: "https://freesound.org/people/HoBoTrails/sounds/424927/" },
+  { tipo: "efeito", nome: "Ba-dum-tss", autor: "jmayoff", pagina: "https://freesound.org/people/jmayoff/sounds/256959/" },
+  { tipo: "efeito", nome: "Whoosh (transição)", autor: "BennettFilmTeacher", pagina: "https://freesound.org/people/BennettFilmTeacher/sounds/486234/" },
+  { tipo: "efeito", nome: "Suspense", autor: "AbrahamMast", pagina: "https://freesound.org/people/AbrahamMast/sounds/514631/" },
+  { tipo: "efeito", nome: "Grilos (silêncio constrangedor)", autor: "Wolfgang_", pagina: "https://opengameart.org/content/crickets-ambient-noise-loopable" },
+  { tipo: "efeito", nome: "Caixa registradora", autor: "videofueralle", pagina: "https://freesound.org/people/videofueralle/sounds/455397/" },
+  { tipo: "efeito", nome: "Campainha", autor: "Joseph Sardin", pagina: "https://bigsoundbank.com/doorbell-1-s0088.html" },
+  { tipo: "efeito", nome: "Buzina", autor: "Joseph Sardin", pagina: "https://bigsoundbank.com/pneumatic-horn-simple-1-s1827.html" },
+  { tipo: "efeito", nome: "Bipes de contagem", autor: "Joseph Sardin", pagina: "https://bigsoundbank.com/hourly-bips-3-s1629.html" },
+  { tipo: "efeito", nome: "Bipe de censura", autor: "Joseph Sardin", pagina: "https://bigsoundbank.com/censorship-2-s1311.html" },
+  { tipo: "efeito", nome: "Notificação", autor: "Kenney", pagina: "https://opengameart.org/content/interface-sounds" },
+  { tipo: "efeito", nome: "Confirmação", autor: "Kenney", pagina: "https://opengameart.org/content/interface-sounds" },
+];

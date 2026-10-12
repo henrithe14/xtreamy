@@ -17,6 +17,11 @@ import {
 import { MensagemErro } from "@/components/ui/Campo";
 import { Envio, Secao } from "@/components/estudio/PainelMidia";
 
+/** Etiqueta discreta dos itens da biblioteca padrão. */
+function SeloPadrao() {
+  return <span className="shrink-0 rounded bg-white/[0.06] px-1.5 py-0.5 text-[0.65rem] font-semibold text-texto-suave">Padrão</span>;
+}
+
 type Alterar = (mudanca: (atual: Cena) => Omit<Cena, "versao">) => void;
 
 const DUCKING: { id: NivelDucking; nome: string }[] = [
@@ -54,6 +59,12 @@ export function PainelAudio({ cena, alterar, ouvindo }: { cena: Cena; alterar: A
   return (
     <div className="flex flex-col gap-6">
       <MensagemErro>{aviso}</MensagemErro>
+      <p className="text-xs text-texto-suave">
+        Os itens “Padrão” são de domínio público (CC0) e podem ir ao ar sem crédito.{" "}
+        <a href="/creditos" target="_blank" rel="noreferrer" className="font-medium text-destaque hover:underline">
+          Ver autores
+        </a>
+      </p>
       <SecaoMusica
         cena={cena}
         alterar={alterar}
@@ -201,6 +212,7 @@ function SecaoMusica({ cena, alterar, musicas, aoEnviar, aoExcluir }: PropsMusic
                   <span className="block truncate">{a.nome}</span>
                   {a.duracao && <span className="text-xs text-texto-suave tabular-nums">{formatarDuracao(a.duracao)}</span>}
                 </span>
+                {a.sistema && <SeloPadrao />}
                 {tocando ? (
                   <span className="px-2 text-xs font-semibold text-destaque">{m?.pausadaEm === null ? "Tocando" : "Pausada"}</span>
                 ) : (
@@ -214,14 +226,16 @@ function SecaoMusica({ cena, alterar, musicas, aoEnviar, aoExcluir }: PropsMusic
                     Tocar
                   </button>
                 )}
-                <button
-                  type="button"
-                  aria-label={`Excluir ${a.nome}`}
-                  onClick={() => aoExcluir(a)}
-                  className="rounded p-1 text-texto-suave hover:bg-no-ar/15 hover:text-no-ar"
-                >
-                  <Trash weight="bold" className="size-4" />
-                </button>
+                {!a.sistema && (
+                  <button
+                    type="button"
+                    aria-label={`Excluir ${a.nome}`}
+                    onClick={() => aoExcluir(a)}
+                    className="rounded p-1 text-texto-suave hover:bg-no-ar/15 hover:text-no-ar"
+                  >
+                    <Trash weight="bold" className="size-4" />
+                  </button>
+                )}
               </li>
             );
           })}
@@ -283,6 +297,7 @@ function SecaoEfeitos({ efeitos, ouvindo, aoEnviar, aoExcluir }: PropsEfeitos) {
                 <SpeakerHigh weight="bold" className="size-5 text-destaque" aria-hidden />
                 <span className="line-clamp-2 text-center break-all">{a.nome}</span>
               </button>
+              {!a.sistema && (
               <button
                 type="button"
                 aria-label={`Excluir ${a.nome}`}
@@ -291,6 +306,7 @@ function SecaoEfeitos({ efeitos, ouvindo, aoEnviar, aoExcluir }: PropsEfeitos) {
               >
                 <Trash weight="bold" className="size-3.5" />
               </button>
+              )}
             </li>
           ))}
         </ul>

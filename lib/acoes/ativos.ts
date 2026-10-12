@@ -12,6 +12,8 @@ export type Ativo = {
   mime: string;
   categoria: CategoriaMidia | null;
   duracao: number | null;
+  /** Biblioteca padrão (CC0): todos usam, ninguém apaga. */
+  sistema: boolean;
 };
 
 const AVISO_SQL = "Os ativos ainda não estão disponíveis (falta rodar o SQL da Etapa 10 no Supabase).";
@@ -22,7 +24,7 @@ export async function listarAtivos(): Promise<{ ativos?: Ativo[]; erro?: string 
   const supabase = await criarClienteServidor();
   const { data, error } = await supabase
     .from("ativos")
-    .select("id, tipo, nome, caminho, mime, metadados")
+    .select("id, user_id, tipo, nome, caminho, mime, metadados")
     .order("criado_em", { ascending: false });
   if (error) return { erro: AVISO_SQL };
   return {
@@ -36,6 +38,7 @@ export async function listarAtivos(): Promise<{ ativos?: Ativo[]; erro?: string 
         mime: a.mime,
         categoria: meta.categoria ?? null,
         duracao: typeof meta.duracao === "number" ? meta.duracao : null,
+        sistema: a.user_id === null,
       };
     }),
   };
@@ -89,8 +92,9 @@ export async function registrarAtivo(novo: NovoAtivo): Promise<{ erro?: string }
 export async function excluirAtivo(id: string): Promise<{ erro?: string }> {
   await exigirUsuario();
   const supabase = await criarClienteServidor();
-  const { data } = await supabase.from("ativos").select("caminho").eq("id", id).maybeSingle();
+  const { data } = await supabase.from("ativos").select("caminho, user_id").eq("id", id).maybeSingle();
   if (!data) return { erro: "Ativo não encontrado." };
+  if (data.user_id === null) return { erro: "Itens da biblioteca padrão não podem ser excluídos." };
   await supabase.storage.from(BUCKET_ATIVOS).remove([data.caminho]);
   const { error } = await supabase.from("ativos").delete().eq("id", id);
   return error ? { erro: "Não foi possível excluir." } : {};

@@ -389,11 +389,12 @@ Etapas implementadas e publicadas, mas cujo critério de "Pronto" ainda não foi
 - **Espelhar câmera:** ligar na pré-entrada e pela barra/cartão no estúdio; a prévia, o cartão e a **live** espelham juntos; recarregar mantém a escolha.
 - **Etapa 12 (inteira):** compartilhar tela no Chrome desktop (convidado e diretor), "Mostrar na live"/"Tirar da live", layouts "Apresentação" e "Só a tela", janela estreita aparece inteira e sem esticar, áudio de uma aba (vídeo do YouTube) vai para a live só com a tela no ar, parar de compartilhar tira a tela da cena, botão escondido no celular. Critério: **tela compartilhada + câmeras na live.**
 - **Gravar:** abrir pelo estúdio, escolher arquivo e "esta aba" com áudio, gravar 5 min com música e vozes, parar pelo estúdio, conferir o MP4/WebM (imagem só do quadro, som da live); testar também sem live e numa gravação longa (30 min+).
+- **Biblioteca padrão:** rodar o SQL `20261012000001_biblioteca_padrao.sql`; conferir que as 12 músicas e os 19 efeitos aparecem com "Padrão" e sem lixeira; tocar na live não listada e ver se o YouTube reivindica alguma música.
 - Etapa 13 em diante: listar aqui o que for publicado sem teste.
 
-### Próximo combinado (antes da Etapa 13)
+### Biblioteca padrão de áudio (feita em 2026-10-12)
 
-**Biblioteca padrão de música e efeitos (só CC0).** Ativos do sistema (`ativos.user_id` nulo, pasta `sistema/` no bucket), que todo criador vê na aba Áudio e não pode apagar; precisa de migração SQL. Antes de baixar qualquer arquivo, apresentar ao usuário a lista com fonte, autor e licença (CC0) de cada faixa/efeito para aprovação. Nada de Pixabay/YouTube Audio Library (proíbem redistribuir) nem CC-BY.
+12 músicas e 19 efeitos **CC0** (OpenGameArt, Freesound, BigSoundBank, Kenney), com licença conferida na página de cada item. Arquivos no bucket `ativos`, pasta `sistema/{musica|efeito}/` (MP3, música −18 LUFS, efeitos −16 LUFS; loops curtos viraram faixas de ~2 min). Linhas em `ativos` com `user_id` nulo (migração `20261012000001_biblioteca_padrao.sql`): todo criador vê na aba Áudio com o selo "Padrão" e não pode apagar. Créditos em `/creditos` (`lib/creditosAudio.ts`). Para trocar ou acrescentar itens: só fontes CC0 (nada de Pixabay, YouTube Audio Library ou CC-BY), enviar para `sistema/` e atualizar a migração e os créditos. **Antes de usar em live importante, testar cada música numa live não listada (risco de Content ID).**
 
 ## 13. Cuidados técnicos conhecidos
 

@@ -42,7 +42,8 @@ export type LinhaEstilo = { id: string; user_id: string; nome: string; definicao
 
 export type LinhaAtivo = {
   id: string;
-  user_id: string;
+  /** null = ativo do sistema (biblioteca padrão), visível para todos. */
+  user_id: string | null;
   tipo: "logo" | "overlay" | "fundo" | "midia" | "vinheta" | "musica" | "efeito";
   nome: string;
   caminho: string;
