@@ -2,6 +2,7 @@
 // Efeitos não ficam na cena: são disparos pontuais do diretor, tocados uma vez no /stage.
 
 import { urlDeAtivo } from "@/lib/ativos";
+import { conectarElemento, origemMix } from "@/lib/mixGravacao";
 
 export const TOPICO_EFEITO = "efeito";
 
@@ -29,8 +30,12 @@ const efeitosTocando = new Set<HTMLAudioElement>();
 /** Toca um efeito uma vez. Cliques em excesso são ignorados para não embolar o som. */
 export function tocarEfeito({ url, volume }: PedidoEfeito) {
   if (efeitosTocando.size >= MAX_EFEITOS_JUNTOS) return;
-  const audio = new Audio(url);
+  const audio = new Audio();
+  const origem = origemMix();
+  if (origem) audio.crossOrigin = origem;
+  audio.src = url;
   audio.volume = volume;
+  conectarElemento(audio);
   efeitosTocando.add(audio);
   const fim = () => efeitosTocando.delete(audio);
   audio.addEventListener("ended", fim, { once: true });

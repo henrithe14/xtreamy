@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Fundo, Logo, Midia, Vinheta } from "@/lib/cena";
+import { conectarElemento, origemMix } from "@/lib/mixGravacao";
 
 /**
  * Leva o vídeo ao ponto certo: o tempo desde `inicioEm` (horário gravado na cena).
@@ -14,6 +15,7 @@ function useVideoSincronizado(inicioEm: number, loop: boolean, comSom: boolean, 
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
+    if (comSom) conectarElemento(video); // janela de gravação: som só para o arquivo
 
     const posicionar = () => {
       const decorrido = (Date.now() - inicioEm) / 1000;
@@ -88,6 +90,7 @@ export function MidiaTelaCheia({ midia, comSom }: { midia: Midia; comSom: boolea
     <video
       ref={ref}
       src={midia.url}
+      crossOrigin={origemMix()}
       playsInline
       preload="auto"
       loop={midia.loop}
@@ -102,6 +105,6 @@ export function VinhetaLive({ vinheta, comSom, aoTerminar }: { vinheta: Vinheta;
   const { ref, terminou, aoAcabar } = useVideoSincronizado(vinheta.inicioEm, false, comSom, aoTerminar);
   if (terminou) return null;
   return (
-    <video ref={ref} src={vinheta.url} playsInline preload="auto" onEnded={aoAcabar} className="absolute inset-0 size-full object-cover" />
+    <video ref={ref} src={vinheta.url} crossOrigin={origemMix()} playsInline preload="auto" onEnded={aoAcabar} className="absolute inset-0 size-full object-cover" />
   );
 }

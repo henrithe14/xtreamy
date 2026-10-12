@@ -5,14 +5,15 @@ import { useDataChannel, useSpeakingParticipants } from "@livekit/components-rea
 import { FATOR_DUCKING, posicaoMusica, type Cena, type Musica } from "@/lib/cena";
 import { lerEfeito, tentarTocar, tocarEfeito, TOPICO_EFEITO } from "@/lib/audioLive";
 import { ATRIBUTO_AUDIO_PRIVADO, lerMetadados } from "@/lib/participante";
-import { AudioPalco, usePalcoVisivel } from "@/components/stage/Composicao";
+import { AudioPalco, usePalcoVisivel, type SaidaLocal } from "@/components/stage/Composicao";
+import { conectarElemento, origemMix } from "@/lib/mixGravacao";
 
 /**
  * Tudo o que se ouve na live (seção 8.5): vozes do palco, música de fundo com ducking
  * e efeitos sonoros. Fica no /stage e, no estúdio, quando o diretor liga "Ouvir a live".
  * O som de mídias e vinhetas sai da própria Composicao (comSom).
  */
-export function AudioLive({ cena }: { cena: Cena }) {
+export function AudioLive({ cena, saida = "tudo" }: { cena: Cena; saida?: SaidaLocal }) {
   const abaixar = useAbaixarMusica(cena);
 
   // Efeitos: só pedidos do diretor (o papel vem do metadata, gravado pelo servidor).
@@ -24,7 +25,7 @@ export function AudioLive({ cena }: { cena: Cena }) {
 
   return (
     <>
-      <AudioPalco cena={cena} />
+      <AudioPalco cena={cena} saida={saida} />
       {cena.musica && <MusicaFundo musica={cena.musica} silenciar={cena.status === "encerrada"} abaixar={abaixar} />}
     </>
   );
@@ -50,6 +51,11 @@ function MusicaFundo({ musica, silenciar, abaixar }: { musica: Musica; silenciar
   useEffect(() => {
     atual.current = musica;
   }, [musica]);
+
+  // Janela de gravação: a música vai só para o arquivo.
+  useEffect(() => {
+    if (ref.current) conectarElemento(ref.current);
+  }, []);
 
   const chaveFaixas = musica.faixas.map((f) => f.url).join("|");
   const parada = musica.pausadaEm !== null || silenciar;
@@ -131,5 +137,5 @@ function MusicaFundo({ musica, silenciar, abaixar }: { musica: Musica; silenciar
     };
   }, [abaixar, musica.volume, musica.ducking]);
 
-  return <audio ref={ref} preload="auto" hidden />;
+  return <audio ref={ref} preload="auto" crossOrigin={origemMix()} hidden />;
 }

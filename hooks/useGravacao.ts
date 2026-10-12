@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { faixaDoMix, retomarMix } from "@/lib/mixGravacao";
 
 // Gravação local (no navegador do diretor): captura a aba da saída (/stage) com o som
 // da live e grava com MediaRecorder. No Chrome, salva direto num arquivo escolhido
@@ -98,12 +99,14 @@ export function useGravacao(alvo: React.RefObject<HTMLElement | null>) {
       }
     }
 
-    // 2) Captura desta aba, com o som da live.
+    // 2) Captura desta aba (só imagem: o som vem da mixagem interna, sem eco).
+    await retomarMix();
+    const somDaLive = faixaDoMix();
     let fluxo: MediaStream;
     try {
       fluxo = await navigator.mediaDevices.getDisplayMedia({
         video: { displaySurface: "browser", frameRate: 30 },
-        audio: true,
+        audio: !somDaLive,
         // Opções do Chrome: já sugerir esta aba e manter o som tocando aqui.
         preferCurrentTab: true,
         selfBrowserSurface: "include",
@@ -114,9 +117,7 @@ export function useGravacao(alvo: React.RefObject<HTMLElement | null>) {
       setErro("A gravação precisa da permissão para capturar esta aba.");
       return;
     }
-    if (fluxo.getAudioTracks().length === 0) {
-      setErro("Sem som: na próxima vez, marque “Compartilhar áudio da guia”. Gravando só o vídeo.");
-    }
+    if (somDaLive) fluxo.addTrack(somDaLive);
 
     // 3) Recorta no quadro 16:9 (Chrome), sem as faixas pretas da janela.
     const video = fluxo.getVideoTracks()[0] as FaixaRecortavel;
@@ -141,7 +142,8 @@ export function useGravacao(alvo: React.RefObject<HTMLElement | null>) {
       } else pedacos.push(e.data);
     };
     rec.onstop = () => {
-      fluxo.getTracks().forEach((t) => t.stop());
+      // A faixa da mixagem continua viva (pode gravar de novo); só a captura da aba para.
+      fluxo.getVideoTracks().forEach((t) => t.stop());
       setEstado("salvando");
       avisarEstudio({ tipo: "xtreamy-gravacao", estado: "salvando" });
       void (async () => {

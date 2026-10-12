@@ -40,9 +40,10 @@ export function Gravador({ alvo, aoComecar }: { alvo: React.RefObject<HTMLElemen
             <ol className="list-decimal space-y-1.5 pl-5 text-sm text-texto-suave">
               <li>Escolha onde salvar o arquivo (se o navegador perguntar).</li>
               <li>
-                Escolha <strong className="text-texto">esta aba</strong> e marque <strong className="text-texto">Compartilhar áudio da guia</strong>.
+                Escolha <strong className="text-texto">esta aba</strong> para gravar.
               </li>
-              <li>Deixe esta janela aberta. Para terminar, use Parar no estúdio.</li>
+              <li>Deixe esta janela aberta e visível. Para terminar, use Parar no estúdio.</li>
+              <li>Esta janela fica muda (evita eco); o som da live vai direto para o arquivo.</li>
             </ol>
             {erro && (
               <p role="alert" className="flex gap-2 text-sm text-ensaio">

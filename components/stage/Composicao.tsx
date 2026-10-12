@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { conectarFaixa } from "@/lib/mixGravacao";
 import {
   AudioTrack,
   useIsMuted,
@@ -295,7 +296,15 @@ function EstadoNaPrevia({ participante, comVideo }: { participante: Participant;
  * No intervalo e depois de encerrada, ninguém é ouvido na live. Quem está "mudo para a
  * live" também não. O ponto do diretor nunca é tocado (e o /stage nem tem permissão de ouvi-lo).
  */
-export function AudioPalco({ cena }: { cena: Cena }) {
+/**
+ * O que toca na caixa de som de quem abriu a saída:
+ * - "tudo": Egress (a live) e "Ouvir a live" no estúdio.
+ * - "sem-diretor": aba "Abrir saída" no computador do diretor (a própria voz daria eco).
+ * - "nada": janela de gravação (o som vai só para o arquivo).
+ */
+export type SaidaLocal = "tudo" | "sem-diretor" | "nada";
+
+export function AudioPalco({ cena, saida = "tudo" }: { cena: Cena; saida?: SaidaLocal }) {
   const palco = usePalcoVisivel(cena);
   const microfones = useTracks([Track.Source.Microphone]);
   const audiosTela = useTracks([Track.Source.ScreenShareAudio]);
@@ -307,19 +316,30 @@ export function AudioPalco({ cena }: { cena: Cena }) {
     tela && !silencio ? audiosTela.find((a) => a.participant.identity === tela.participant.identity && !a.participant.isLocal) : undefined;
   return (
     <>
-      {audioTela && <AudioTrack key="tela" trackRef={audioTela} />}
+      {audioTela && <FaixaNaLive key="tela" trackRef={audioTela} tocar={saida !== "nada"} />}
       {microfones
         // A própria voz nunca volta (no estúdio, com "Ouvir a live" ligado).
         .filter((m) => visiveis.has(m.participant.identity) && !m.participant.isLocal)
         .map((m) => (
-          <AudioSeNaoPrivado key={m.participant.identity} trackRef={m} />
+          <AudioSeNaoPrivado
+            key={m.participant.identity}
+            trackRef={m}
+            tocar={saida === "tudo" || (saida === "sem-diretor" && lerMetadados(m.participant.metadata).papel !== "host")}
+          />
         ))}
     </>
   );
 }
 
 /** "Mudo para a live": reage ao atributo na hora; o vídeo continua, a voz não vai ao ar. */
-function AudioSeNaoPrivado({ trackRef }: { trackRef: TrackReference }) {
+function AudioSeNaoPrivado({ trackRef, tocar }: { trackRef: TrackReference; tocar: boolean }) {
   const privado = useParticipantAttribute(ATRIBUTO_AUDIO_PRIVADO, { participant: trackRef.participant }) === "1";
-  return privado ? null : <AudioTrack trackRef={trackRef} />;
+  return privado ? null : <FaixaNaLive trackRef={trackRef} tocar={tocar} />;
+}
+
+/** Toca a faixa (ou só assina, mudo) e, na janela de gravação, soma na mixagem do arquivo. */
+function FaixaNaLive({ trackRef, tocar }: { trackRef: TrackReference; tocar: boolean }) {
+  const faixa = trackRef.publication.track?.mediaStreamTrack;
+  useEffect(() => (faixa ? conectarFaixa(faixa) : undefined), [faixa]);
+  return <AudioTrack trackRef={trackRef} muted={!tocar} />;
 }
