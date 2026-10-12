@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   RoomAudioRenderer,
   useAudioPlayback,
@@ -8,6 +8,7 @@ import {
   useRoomContext,
   useIsSpeaking,
   useLocalParticipant,
+  useParticipantAttribute,
   useParticipantInfo,
   useRemoteParticipants,
   useTrackToggle,
@@ -31,7 +32,7 @@ import {
 } from "@phosphor-icons/react";
 import { useAlternarEspelho, useAlternarMudoParaLive, useEspelhado, useMudoParaLive } from "@/hooks/useAudioPrivado";
 import { usePonto } from "@/hooks/usePonto";
-import { ehPonto, lerMetadados } from "@/lib/participante";
+import { ATRIBUTO_DIRETOR, ehPonto, lerMetadados } from "@/lib/participante";
 import { useCena, useControleCena } from "@/hooks/useCena";
 import type { Cena } from "@/lib/cena";
 import type { PapelSala } from "@/lib/participante";
@@ -47,7 +48,9 @@ import { PainelEstilo } from "@/components/estudio/PainelEstilo";
 import { PainelBanners } from "@/components/estudio/PainelBanners";
 import { PainelMidia } from "@/components/estudio/PainelMidia";
 import { PainelAudio } from "@/components/estudio/PainelAudio";
-import { AudioLive } from "@/components/stage/AudioLive";
+import { AudioLive, TrilhaNaSala } from "@/components/stage/AudioLive";
+import { PainelTeleprompter } from "@/components/estudio/PainelTeleprompter";
+import { TeleprompterRecebido } from "@/components/estudio/Teleprompter";
 import { TelasCompartilhadas } from "@/components/estudio/TelasCompartilhadas";
 import { BotaoGravar } from "@/components/estudio/BotaoGravar";
 import { ControlesLive, Cronometro } from "@/components/estudio/ControlesLive";
@@ -85,6 +88,10 @@ export function Sala({
   aoSair,
 }: Props) {
   const souHost = papel === "host";
+  // Diretor delegado: convidado a quem o dono passou a direção (atributo gravado pelo servidor).
+  const delegado =
+    useParticipantAttribute(ATRIBUTO_DIRETOR, { participant: useLocalParticipant().localParticipant }) === "1" && !souHost;
+  const dirige = souHost || delegado;
   // O modo do diretor pode mudar durante a live: vale o que está no metadata agora.
   const { localParticipant } = useLocalParticipant();
   const { metadata } = useParticipantInfo({ participant: localParticipant });
@@ -95,16 +102,25 @@ export function Sala({
 
   return (
     // Diretor no desktop: a página não rola; a prévia fica fixa e só a lateral rola.
-    <div className={`flex min-h-dvh flex-col ${souHost ? "lg:h-dvh lg:overflow-hidden" : ""}`}>
-      <BarraSuperior titulo={titulo} papel={papel} soDiretor={soDiretor} transmissaoId={transmissaoId} temCanal={temCanal} />
+    <div className={`flex min-h-dvh flex-col ${dirige ? "lg:h-dvh lg:overflow-hidden" : ""}`}>
+      <BarraSuperior
+        titulo={titulo}
+        papel={papel}
+        delegado={delegado}
+        codigo={codigo}
+        soDiretor={soDiretor}
+        transmissaoId={transmissaoId}
+        temCanal={temCanal}
+      />
       <AvisoSom />
       {falhaAparelho && <AvisoAparelho falha={falhaAparelho} aoFechar={aoFecharAvisoAparelho} />}
 
       {!souHost && <AvisoPontoRecebido />}
 
-      {souHost ? (
+      {dirige ? (
         <PainelDiretor
           transmissaoId={transmissaoId}
+          codigo={delegado ? codigo : undefined}
           temChat={temChat}
           ouvindo={ouvindoLive}
           aoAlternarOuvir={() => setOuvindoLive((v) => !v)}
@@ -128,31 +144,50 @@ export function Sala({
         </BotaoBarra>
       </nav>
 
-      {/* Toca o áudio de todos na sala (a equipe se ouve), ou só a live para o diretor. */}
-      {souHost && ouvindoLive ? <AudioLive cena={cenaSala} /> : <RoomAudioRenderer />}
+      {/* Teleprompter: só na tela de quem recebeu (nunca na live). */}
+      <TeleprompterRecebido />
+
+      {/* A equipe se ouve e ouve a música e os efeitos da live; "Ouvir a live" troca tudo pela mixagem. */}
+      {dirige && ouvindoLive ? (
+        <AudioLive cena={cenaSala} />
+      ) : (
+        <>
+          <RoomAudioRenderer />
+          <TrilhaNaSala cena={cenaSala} />
+        </>
+      )}
     </div>
   );
 }
 
 /** Diretor: prévia + disposições à esquerda, pessoas (palco/bastidor) à direita. */
-type PropsDiretor = { transmissaoId: string; temChat: boolean; ouvindo: boolean; aoAlternarOuvir: () => void };
+type PropsDiretor = {
+  transmissaoId: string;
+  /** Só para o diretor delegado: o servidor confere a direção pelo convite. */
+  codigo?: string;
+  temChat: boolean;
+  ouvindo: boolean;
+  aoAlternarOuvir: () => void;
+};
 
-function PainelDiretor({ transmissaoId, temChat, ouvindo, aoAlternarOuvir }: PropsDiretor) {
-  const { cena, alterar, erro } = useControleCena(transmissaoId);
-  const [abaLateral, setAbaLateral] = useState<"pessoas" | "comentarios" | "estilo" | "banners" | "midia" | "audio">(
-    "pessoas",
-  );
+function PainelDiretor({ transmissaoId, codigo, temChat, ouvindo, aoAlternarOuvir }: PropsDiretor) {
+  const dono = !codigo;
+  const { cena, alterar, erro } = useControleCena(transmissaoId, codigo);
+  const sala = useMemo(() => (codigo ? { transmissaoId, codigo } : undefined), [transmissaoId, codigo]);
+  const [abaLateral, setAbaLateral] = useState<
+    "pessoas" | "comentarios" | "estilo" | "banners" | "midia" | "audio" | "roteiro"
+  >("pessoas");
 
   async function editarEtiqueta(identity: string, etiqueta: string) {
     await fetch("/api/participante", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ transmissaoId, alvo: identity, etiqueta }),
+      body: JSON.stringify({ transmissaoId, codigo, alvo: identity, etiqueta }),
     });
   }
   const ponto = usePonto(transmissaoId);
-  const mudo = useAlternarMudoParaLive(transmissaoId);
-  const espelho = useAlternarEspelho(transmissaoId);
+  const mudo = useAlternarMudoParaLive(transmissaoId, codigo);
+  const espelho = useAlternarEspelho(transmissaoId, codigo);
   const participantes = useRemoteParticipants();
   const localIdentity = useLocalParticipant().localParticipant.identity;
   const nomeAlvo = participantes.find((p) => p.identity === ponto.alvo)?.name;
@@ -215,6 +250,7 @@ function PainelDiretor({ transmissaoId, temChat, ouvindo, aoAlternarOuvir }: Pro
               ["banners", "Banners"],
               ["midia", "Mídia"],
               ["audio", "Áudio"],
+              ["roteiro", "Roteiro"],
             ] as const
           ).map(([id, rotulo]) => (
             <button
@@ -223,7 +259,7 @@ function PainelDiretor({ transmissaoId, temChat, ouvindo, aoAlternarOuvir }: Pro
               role="tab"
               aria-selected={abaLateral === id}
               onClick={() => setAbaLateral(id)}
-              className={`flex-1 rounded-lg px-1.5 py-2 text-xs font-semibold transition-colors sm:text-sm ${
+              className={`flex-1 shrink-0 rounded-lg px-1.5 py-2 text-xs font-semibold transition-colors sm:text-sm ${
                 abaLateral === id ? "bg-white/10 text-texto" : "text-texto-suave hover:text-texto"
               }`}
             >
@@ -245,7 +281,16 @@ function PainelDiretor({ transmissaoId, temChat, ouvindo, aoAlternarOuvir }: Pro
               // Na própria câmera, a escolha fica lembrada para a próxima entrada.
               alternarEspelho: (identity, valor) => void espelho.alternar(identity, valor, identity === localIdentity),
               espelhoPendente: espelho.pendente,
-                ponto,
+                ponto: dono ? ponto : null,
+                alternarDirecao: dono
+                  ? (identity, diretor) =>
+                      void fetch("/api/participante", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ transmissaoId, alvo: identity, diretor }),
+                      })
+                  : null,
+                codigo,
                 etiquetasOcultas: cena.etiquetasOcultas,
                 alternarEtiqueta: (identity) =>
                   alterar((c) => ({
@@ -261,6 +306,7 @@ function PainelDiretor({ transmissaoId, temChat, ouvindo, aoAlternarOuvir }: Pro
           <section hidden={abaLateral !== "comentarios"} aria-label="Comentários" className="vidro rounded-xl p-3 sm:p-4">
             <PainelComentarios
               transmissaoId={transmissaoId}
+              codigo={codigo}
               temChat={temChat}
               lerYoutube={abaLateral === "comentarios" || cena.status === "ao_vivo" || cena.status === "intervalo"}
               destaque={{
@@ -271,16 +317,19 @@ function PainelDiretor({ transmissaoId, temChat, ouvindo, aoAlternarOuvir }: Pro
             />
           </section>
           <section hidden={abaLateral !== "estilo"} aria-label="Estilo" className="vidro rounded-xl p-3 sm:p-4">
-            <PainelEstilo cena={cena} alterar={alterar} />
+            <PainelEstilo cena={cena} alterar={alterar} salvos={dono} />
           </section>
           <section hidden={abaLateral !== "banners"} aria-label="Banners" className="vidro rounded-xl p-3 sm:p-4">
-            <PainelBanners cena={cena} alterar={alterar} />
+            <PainelBanners cena={cena} alterar={alterar} salvos={dono} />
           </section>
           <section hidden={abaLateral !== "midia"} aria-label="Mídia" className="vidro rounded-xl p-3 sm:p-4">
-            <PainelMidia cena={cena} alterar={alterar} />
+            <PainelMidia cena={cena} alterar={alterar} sala={sala} />
           </section>
           <section hidden={abaLateral !== "audio"} aria-label="Áudio" className="vidro rounded-xl p-3 sm:p-4">
-            <PainelAudio cena={cena} alterar={alterar} ouvindo={ouvindo} />
+            <PainelAudio cena={cena} alterar={alterar} sala={sala} />
+          </section>
+          <section hidden={abaLateral !== "roteiro"} aria-label="Roteiro" className="vidro rounded-xl p-3 sm:p-4">
+            <PainelTeleprompter salvos={dono} />
           </section>
         </div>
       </div>
@@ -325,9 +374,19 @@ function EstadoNoPalco({ cena }: { cena: Cena }) {
   );
 }
 
-type PropsBarra = { titulo: string; papel: PapelSala; soDiretor: boolean; transmissaoId: string; temCanal: boolean };
+type PropsBarra = {
+  titulo: string;
+  papel: PapelSala;
+  delegado: boolean;
+  codigo?: string;
+  soDiretor: boolean;
+  transmissaoId: string;
+  temCanal: boolean;
+};
 
-function BarraSuperior({ titulo, papel, soDiretor, transmissaoId, temCanal }: PropsBarra) {
+function BarraSuperior({ titulo, papel, delegado, codigo, soDiretor, transmissaoId, temCanal }: PropsBarra) {
+  const dirige = papel === "host" || delegado;
+  const codigoDelegado = delegado ? codigo : undefined;
   const cena = useCena();
   const estado = useConnectionState();
   const reconectando = estado === ConnectionState.Reconnecting || estado === ConnectionState.SignalReconnecting;
@@ -338,7 +397,7 @@ function BarraSuperior({ titulo, papel, soDiretor, transmissaoId, temCanal }: Pr
       <div className="min-w-0 flex-1">
         <h1 className="truncate font-semibold">{titulo}</h1>
         <p className="text-xs text-texto-suave">
-          {papel === "convidado" ? "Convidado" : soDiretor ? "Só diretor: você não aparece na live" : "Diretor e apresentador"}
+          {delegado ? "Convidado com a direção" : papel === "convidado" ? "Convidado" : soDiretor ? "Só diretor: você não aparece na live" : "Diretor e apresentador"}
         </p>
       </div>
       <div className="flex items-center gap-2 text-sm font-semibold">
@@ -350,8 +409,8 @@ function BarraSuperior({ titulo, papel, soDiretor, transmissaoId, temCanal }: Pr
         )}
       </div>
       {papel === "host" && <BotaoModoDiretor transmissaoId={transmissaoId} soDiretor={soDiretor} />}
-      {papel === "host" && <BotaoGravar transmissaoId={transmissaoId} />}
-      {papel === "host" && <ControlesLive transmissaoId={transmissaoId} cena={cena} temCanal={temCanal} />}
+      {dirige && <BotaoGravar transmissaoId={transmissaoId} codigo={codigoDelegado} />}
+      {dirige && <ControlesLive transmissaoId={transmissaoId} codigo={codigoDelegado} cena={cena} temCanal={temCanal} />}
       {reconectando && (
         <p role="status" className="flex items-center gap-2 rounded-full bg-ensaio/15 px-3 py-1 text-sm font-semibold text-ensaio">
           <span className="tally-pulso size-2 rounded-full bg-ensaio" aria-hidden />

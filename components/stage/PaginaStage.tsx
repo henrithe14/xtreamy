@@ -18,6 +18,7 @@ export function PaginaStage() {
   const urlEgress = params.get("url");
   const tokenEgress = params.get("token");
   const transmissaoId = params.get("t");
+  const codigo = params.get("c") ?? undefined;
   const [buscada, setBuscada] = useState<Conexao>(null);
 
   const conexao: Conexao =
@@ -35,7 +36,7 @@ export function PaginaStage() {
         const r = await fetch("/api/token/stage", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transmissaoId }),
+          body: JSON.stringify({ transmissaoId, codigo }),
         });
         const dados = (await r.json()) as { token?: string; erro?: string };
         if (cancelado) return;
@@ -48,7 +49,7 @@ export function PaginaStage() {
     return () => {
       cancelado = true;
     };
-  }, [urlEgress, tokenEgress, transmissaoId]);
+  }, [urlEgress, tokenEgress, transmissaoId, codigo]);
 
   // A saída quer sempre a melhor qualidade de quem está no palco.
   const modoEgress = Boolean(urlEgress && tokenEgress);

@@ -39,3 +39,6 @@ export const ATRIBUTO_AUDIO_PRIVADO = "audioPrivado";
 
 /** Atributo "câmera espelhada": vale na própria tela e na live (o que se vê é o que vai ao ar). */
 export const ATRIBUTO_ESPELHAR = "espelhar";
+
+/** Atributo "diretor delegado": o dono deu a esta pessoa os controles de direção. */
+export const ATRIBUTO_DIRETOR = "diretor";

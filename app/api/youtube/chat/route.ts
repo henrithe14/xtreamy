@@ -1,6 +1,5 @@
-import { resolverAcesso } from "@/lib/acesso";
+import { obterDirecao } from "@/lib/direcao";
 import { accessTokenDoDestino } from "@/lib/destinos";
-import { obterTransmissaoDoUsuario } from "@/lib/transmissoes";
 import { ErroYouTube, lerChat } from "@/lib/youtube";
 
 /**
@@ -12,17 +11,17 @@ export async function GET(request: Request) {
   const transmissaoId = url.searchParams.get("t") ?? "";
   const pagina = url.searchParams.get("pagina") ?? undefined;
 
-  const acesso = await resolverAcesso(transmissaoId, undefined);
-  if (acesso?.papel !== "host" || !acesso.userId) {
-    return Response.json({ erro: "Apenas o diretor lê o chat por aqui." }, { status: 403 });
-  }
-  const t = await obterTransmissaoDoUsuario(transmissaoId);
+  const codigo = url.searchParams.get("c") || undefined;
+
+  const direcao = await obterDirecao(transmissaoId, codigo);
+  if (!direcao) return Response.json({ erro: "Apenas o diretor lê o chat por aqui." }, { status: 403 });
+  const t = direcao.transmissao;
   if (!t?.destino_id || !t.live_chat_id) {
     return Response.json({ erro: "Esta transmissão não tem chat do YouTube.", encerrado: true }, { status: 404 });
   }
 
   try {
-    const token = await accessTokenDoDestino(t.destino_id, acesso.userId);
+    const token = await accessTokenDoDestino(t.destino_id, direcao.donoId);
     return Response.json(await lerChat(token, t.live_chat_id, pagina));
   } catch (e) {
     const motivo = e instanceof ErroYouTube ? e.motivo : "falha";

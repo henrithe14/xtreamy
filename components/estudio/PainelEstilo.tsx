@@ -12,7 +12,7 @@ import { Selecao } from "@/components/ui/Selecao";
 type Alterar = (mudanca: (atual: Cena) => Omit<Cena, "versao">) => void;
 
 /** Aba Estilo do diretor: tudo muda a prévia e a live na hora. */
-export function PainelEstilo({ cena, alterar }: { cena: Cena; alterar: Alterar }) {
+export function PainelEstilo({ cena, alterar, salvos = true }: { cena: Cena; alterar: Alterar; salvos?: boolean }) {
   const mudarEstilo = (parcial: Partial<Estilo>) => alterar((c) => ({ ...c, estilo: { ...c.estilo, ...parcial } }));
   const mudarCamera = (parcial: Partial<Estilo["camera"]>) =>
     alterar((c) => ({ ...c, estilo: { ...c.estilo, camera: { ...c.estilo.camera, ...parcial } } }));
@@ -96,7 +96,7 @@ export function PainelEstilo({ cena, alterar }: { cena: Cena; alterar: Alterar }
         </div>
       </Secao>
 
-      <EstilosSalvos cena={cena} alterar={alterar} />
+      {salvos && <EstilosSalvos cena={cena} alterar={alterar} />}
     </div>
   );
 }

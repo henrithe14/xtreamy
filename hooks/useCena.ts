@@ -14,7 +14,8 @@ export function useCena(): Cena {
  * Para o diretor: cena com alteração otimista (a tela responde na hora) e envio ao
  * servidor em fila, um pedido por vez, para cliques rápidos não se atropelarem.
  */
-export function useControleCena(transmissaoId: string) {
+/** `codigo`: diretor delegado (convidado); o servidor confere a direção. */
+export function useControleCena(transmissaoId: string, codigo?: string) {
   const cenaSala = useCena();
   const [otimista, setOtimista] = useState<Cena | null>(null);
   const [erro, setErro] = useState<string>();
@@ -40,7 +41,7 @@ export function useControleCena(transmissaoId: string) {
           const resposta = await fetch("/api/cena", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ transmissaoId, cena: nova }),
+            body: JSON.stringify({ transmissaoId, codigo, cena: nova }),
           });
           if (!resposta.ok) {
             const dados = (await resposta.json().catch(() => ({}))) as { erro?: string };
@@ -53,7 +54,7 @@ export function useControleCena(transmissaoId: string) {
         }
       });
     },
-    [transmissaoId],
+    [transmissaoId, codigo],
   );
 
   return { cena, alterar, erro };

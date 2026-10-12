@@ -1,6 +1,7 @@
 "use server";
 
 import { resolverAcesso } from "@/lib/acesso";
+import { obterDirecao } from "@/lib/direcao";
 import { removerDaSala } from "@/lib/livekit";
 import { criarClienteServidor } from "@/lib/supabase/servidor";
 import { gerarCodigoConvite, urlConvite } from "@/lib/transmissoes";
@@ -11,8 +12,11 @@ async function exigirHost(transmissaoId: string) {
   if (acesso?.papel !== "host") throw new Error("Apenas o diretor pode fazer isso.");
 }
 
-export async function removerParticipante(transmissaoId: string, identity: string): Promise<{ erro?: string }> {
-  await exigirHost(transmissaoId);
+export async function removerParticipante(transmissaoId: string, identity: string, codigo?: string): Promise<{ erro?: string }> {
+  const direcao = await obterDirecao(transmissaoId, codigo);
+  if (!direcao) return { erro: "Apenas o diretor pode remover pessoas." };
+  // O delegado não remove o dono.
+  if (direcao.tipo === "delegado" && identity.startsWith("host-")) return { erro: "Só o dono pode fazer isso." };
   try {
     await removerDaSala(transmissaoId, identity);
     return {};

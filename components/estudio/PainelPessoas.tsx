@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import {
   useIsMuted,
   useIsSpeaking,
+  useParticipantAttribute,
   useParticipantInfo,
   useParticipants,
   useTracks,
@@ -11,12 +12,12 @@ import {
   type TrackReference,
 } from "@livekit/components-react";
 import { Track, type Participant } from "livekit-client";
-import { ArrowLineUp, Eye, EyeSlash, FlipHorizontal, Headset, MicrophoneSlash, PencilSimple, SpeakerSimpleSlash, Star, UserMinus } from "@phosphor-icons/react";
+import { ArrowLineUp, Crown, Eye, EyeSlash, FlipHorizontal, Headset, MicrophoneSlash, PencilSimple, SpeakerSimpleSlash, Star, UserMinus } from "@phosphor-icons/react";
 import { useEspelhado, useMudoParaLive } from "@/hooks/useAudioPrivado";
 import type { ControlePonto } from "@/hooks/usePonto";
 import type { Cena } from "@/lib/cena";
 import { obterLayout } from "@/lib/layouts";
-import { ehPonto, lerMetadados } from "@/lib/participante";
+import { ATRIBUTO_DIRETOR, ehPonto, lerMetadados } from "@/lib/participante";
 import { removerParticipante } from "@/lib/acoes/sala";
 import { CartaoSoVoz } from "@/components/ui/CartaoSoVoz";
 
@@ -27,7 +28,12 @@ export type ControlesPessoa = {
   /** Câmera espelhada (na tela e na live). */
   alternarEspelho: (identity: string, espelhar: boolean) => void;
   espelhoPendente: string | null;
-  ponto: ControlePonto;
+  /** Só o dono tem ponto (conexão separada com a conta dele). */
+  ponto: ControlePonto | null;
+  /** Só o dono passa a direção a um convidado (diretor delegado). */
+  alternarDirecao: ((identity: string, diretor: boolean) => void) | null;
+  /** Código do convite do diretor delegado (as ações do servidor conferem a direção). */
+  codigo?: string;
   /** Identities com o nome escondido na live. */
   etiquetasOcultas: string[];
   alternarEtiqueta: (identity: string) => void;
@@ -164,7 +170,8 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
   const mudoParaLive = useMudoParaLive(participante);
   const espelhado = useEspelhado(participante);
   const { ponto } = controles;
-  const pontoNestaPessoa = ponto.alvo === identity;
+  const pontoNestaPessoa = ponto?.alvo === identity;
+  const delegado = useParticipantAttribute(ATRIBUTO_DIRETOR, { participant: participante }) === "1";
   const etiquetaOculta = identity ? controles.etiquetasOcultas.includes(identity) : false;
   const [editando, setEditando] = useState(false);
   const [rascunho, setRascunho] = useState("");
@@ -190,7 +197,7 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
         )}
         {!local && identity && (
           <div className="absolute top-1 right-1">
-            <BotaoRemover transmissaoId={transmissaoId} identity={identity} nome={nome} />
+            <BotaoRemover transmissaoId={transmissaoId} codigo={controles.codigo} identity={identity} nome={nome} />
           </div>
         )}
       </div>
@@ -234,7 +241,9 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
               ? soDiretor
                 ? "Diretor, fora da live"
                 : "Diretor"
-              : etiqueta || "Convidado"}
+              : delegado
+                ? "Diretor convidado"
+                : etiqueta || "Convidado"}
           {identity && (
             <>
               <button
@@ -283,7 +292,16 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
             <FlipHorizontal weight="bold" />
           </BotaoAcao>
         )}
-        {!local && identity && (
+        {controles.alternarDirecao && papel === "convidado" && identity && (
+          <BotaoAcao
+            onClick={() => controles.alternarDirecao?.(identity, !delegado)}
+            ativo={delegado}
+            rotulo={delegado ? "Tirar a direção desta pessoa" : "Passar a direção para esta pessoa (ela controla o estúdio com você)"}
+          >
+            <Crown weight="bold" />
+          </BotaoAcao>
+        )}
+        {ponto && !local && identity && (
           <BotaoAcao
             onClick={() => void (pontoNestaPessoa ? ponto.desligar() : ponto.falarCom(identity))}
             ativo={pontoNestaPessoa}
@@ -331,7 +349,9 @@ function BotaoAcao({ onClick, children, rotulo, destaque, ativo, desativado }: P
   );
 }
 
-function BotaoRemover({ transmissaoId, identity, nome }: { transmissaoId: string; identity: string; nome: string }) {
+type PropsRemover = { transmissaoId: string; codigo?: string; identity: string; nome: string };
+
+function BotaoRemover({ transmissaoId, codigo, identity, nome }: PropsRemover) {
   const [confirmando, setConfirmando] = useState(false);
   const [removendo, iniciar] = useTransition();
   const [erro, setErro] = useState(false);
@@ -357,7 +377,7 @@ function BotaoRemover({ transmissaoId, identity, nome }: { transmissaoId: string
         disabled={removendo}
         onClick={() =>
           iniciar(async () => {
-            const r = await removerParticipante(transmissaoId, identity);
+            const r = await removerParticipante(transmissaoId, identity, codigo);
             if (r.erro) setErro(true);
           })
         }

@@ -19,13 +19,15 @@ const igual = (a: ComentarioDestacado | null, autor: string, texto: string) =>
 /** Comentários do diretor: YouTube (pode destacar na tela) e chat interno do estúdio. */
 type PropsPainel = {
   transmissaoId: string;
+  /** Diretor delegado: o servidor confere a direção pelo convite. */
+  codigo?: string;
   temChat: boolean;
   /** Ler o chat do YouTube agora (live acontecendo ou aba aberta): economiza a cota diária. */
   lerYoutube: boolean;
   destaque: Destaque;
 };
 
-export function PainelComentarios({ transmissaoId, temChat, lerYoutube, destaque }: PropsPainel) {
+export function PainelComentarios({ transmissaoId, codigo, temChat, lerYoutube, destaque }: PropsPainel) {
   const [aba, setAba] = useState<"youtube" | "estudio">(temChat ? "youtube" : "estudio");
 
   return (
@@ -54,7 +56,7 @@ export function PainelComentarios({ transmissaoId, temChat, lerYoutube, destaque
 
       {aba === "youtube" ? (
         temChat ? (
-          <ChatYoutube transmissaoId={transmissaoId} ativo={lerYoutube} destaque={destaque} />
+          <ChatYoutube transmissaoId={transmissaoId} codigo={codigo} ativo={lerYoutube} destaque={destaque} />
         ) : (
           <p className="text-sm text-texto-suave">Esta transmissão não tem canal do YouTube, então não há chat público.</p>
         )
@@ -92,8 +94,10 @@ function useRolarParaFim(dependencia: number) {
   return ref;
 }
 
-function ChatYoutube({ transmissaoId, ativo, destaque }: { transmissaoId: string; ativo: boolean; destaque: Destaque }) {
-  const { mensagens, erro, encerrado, carregando } = useChatYoutube(transmissaoId, ativo);
+type PropsChat = { transmissaoId: string; codigo?: string; ativo: boolean; destaque: Destaque };
+
+function ChatYoutube({ transmissaoId, codigo, ativo, destaque }: PropsChat) {
+  const { mensagens, erro, encerrado, carregando } = useChatYoutube(transmissaoId, ativo, codigo);
   const lista = useRolarParaFim(mensagens.length);
 
   return (

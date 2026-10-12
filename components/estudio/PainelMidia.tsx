@@ -18,22 +18,24 @@ const POSICOES: { id: PosicaoLogo; nome: string }[] = [
 ];
 
 /** Aba Mídia do diretor: logo, overlay, fundo, mídias por momento e vinhetas. */
-export function PainelMidia({ cena, alterar }: { cena: Cena; alterar: Alterar }) {
+/** `sala`: diretor delegado (lê a biblioteca do dono; não envia nem apaga). */
+export function PainelMidia({ cena, alterar, sala }: { cena: Cena; alterar: Alterar; sala?: { transmissaoId: string; codigo: string } }) {
+  const podeEnviar = !sala;
   const [ativos, setAtivos] = useState<Ativo[]>([]);
   const [aviso, setAviso] = useState<string>();
 
   const carregar = useCallback(async () => {
-    const r = await listarAtivos();
+    const r = await listarAtivos(sala);
     setAtivos(r.ativos ?? []);
     setAviso(r.erro);
-  }, []);
+  }, [sala]);
 
   useEffect(() => {
-    void listarAtivos().then((r) => {
+    void listarAtivos(sala).then((r) => {
       setAtivos(r.ativos ?? []);
       setAviso(r.erro);
     });
-  }, []);
+  }, [sala]);
 
   const doTipo = (tipo: TipoAtivo) => ativos.filter((a) => a.tipo === tipo);
   const excluir = async (a: Ativo) => {
@@ -55,7 +57,7 @@ export function PainelMidia({ cena, alterar }: { cena: Cena; alterar: Alterar })
       <MensagemErro>{aviso}</MensagemErro>
 
       <Secao titulo="Logotipo">
-        <Envio tipo="logo" aoEnviar={carregar} rotulo="Enviar logo (PNG, JPG ou WebP)" />
+        {podeEnviar && <Envio tipo="logo" aoEnviar={carregar} rotulo="Enviar logo (PNG, JPG ou WebP)" />}
         <Biblioteca
           itens={doTipo("logo")}
           emUso={(a) => cena.logo?.url === a.url}
@@ -82,7 +84,7 @@ export function PainelMidia({ cena, alterar }: { cena: Cena; alterar: Alterar })
       </Secao>
 
       <Secao titulo="Overlay" dica="PNG transparente feito para 1920×1080, por cima de tudo.">
-        <Envio tipo="overlay" aoEnviar={carregar} rotulo="Enviar overlay (PNG)" />
+        {podeEnviar && <Envio tipo="overlay" aoEnviar={carregar} rotulo="Enviar overlay (PNG)" />}
         <Biblioteca
           itens={doTipo("overlay")}
           emUso={(a) => cena.overlay === a.url}
@@ -104,7 +106,7 @@ export function PainelMidia({ cena, alterar }: { cena: Cena; alterar: Alterar })
           </button>
           <CorDeFundo cena={cena} alterar={alterar} />
         </div>
-        <Envio tipo="fundo" aoEnviar={carregar} rotulo="Enviar imagem ou vídeo em loop" />
+        {podeEnviar && <Envio tipo="fundo" aoEnviar={carregar} rotulo="Enviar imagem ou vídeo em loop" />}
         <Biblioteca
           itens={doTipo("fundo")}
           emUso={(a) => cena.fundo?.tipo !== "cor" && cena.fundo?.valor === a.url}
@@ -115,7 +117,7 @@ export function PainelMidia({ cena, alterar }: { cena: Cena; alterar: Alterar })
       </Secao>
 
       <Secao titulo="Mídias" dica="Tocam em tela cheia, com som na live. O intervalo usa a mais recente de “Volto logo”.">
-        <EnvioMidia aoEnviar={carregar} />
+        {podeEnviar && <EnvioMidia aoEnviar={carregar} />}
         {CATEGORIAS.map((cat) => {
           const itens = doTipo("midia").filter((a) => (a.categoria ?? "outras") === cat.id);
           if (itens.length === 0) return null;
@@ -142,7 +144,7 @@ export function PainelMidia({ cena, alterar }: { cena: Cena; alterar: Alterar })
       </Secao>
 
       <Secao titulo="Vinhetas" dica="Vídeo curto com som, tocado uma vez por cima de tudo.">
-        <Envio tipo="vinheta" aoEnviar={carregar} rotulo="Enviar vinheta (MP4 ou WebM)" />
+        {podeEnviar && <Envio tipo="vinheta" aoEnviar={carregar} rotulo="Enviar vinheta (MP4 ou WebM)" />}
         <Biblioteca
           itens={doTipo("vinheta")}
           emUso={(a) => cena.vinheta?.url === a.url}

@@ -151,7 +151,9 @@ type Cena = {
 
 Implementação (Etapa 4): tipo e validação em `lib/cena.ts` (`versao` cresce a cada mudança); o diretor altera por `useControleCena` (otimista + fila) → `POST /api/cena` (só host, valida) → `updateRoomMetadata`. Todos leem com `useCena()` (metadata da sala). Quem aparece = `usePalcoVisivel`: está em `noPalco`, está na sala, não é "só diretor" e cabe no layout; essa mesma lista decide o áudio do `/stage` (`AudioPalco`). A composição (`components/stage/Composicao.tsx`) é a mesma na prévia e no `/stage`, com tamanhos em `cqw`.
 
-Efeitos sonoros **não** ficam na cena (são disparos pontuais): o host envia um evento por *data message* para o `/stage`, que toca o som uma vez.
+Efeitos sonoros **não** ficam na cena (são disparos pontuais): quem dirige envia um evento por *data message* (`{url, volume, acao: tocar|parar}`) para todos; o `/stage` e o estúdio tocam uma vez. Clicar de novo no mesmo efeito enquanto ele toca **corta** (na live e no estúdio). **A equipe no estúdio ouve a música e os efeitos** (`TrilhaNaSala`) sem precisar de "Ouvir a live".
+
+**Cena lembrada:** a cada mudança, o servidor guarda o visual (layout, tamanho do Solo, cores, tema, logo, overlay e fundo) do dono na tabela `cena_salva` (migração `20261012000003_cena_salva.sql`). Sala sem cena (transmissão nova, ou o LiveKit fechou a sala vazia) começa com esse visual (`prepararSala` no `/api/token`). Pessoas no palco, banner, mídias, música e status não são guardados.
 
 ### Palco × bastidor
 - **No palco:** aparece no vídeo e o áudio vai para a live.
@@ -174,6 +176,7 @@ Implementação (Etapa 7): o atributo `audioPrivado` (participant **attributes**
 - O host cria roteiros (texto) e envia para um ou mais participantes.
 - Aparece **só na tela do participante**, numa faixa sobreposta perto da câmera (para manter o olhar), com rolagem automática. Velocidade, tamanho da fonte, pausar e voltar ficam com o host e com o próprio participante.
 - Sincronizado por *data message*; **nunca** aparece no `/stage`.
+- Implementação (Etapa 13): aba **Roteiro** do diretor (`PainelTeleprompter`): título + texto (até 20 mil caracteres), "Quem recebe" (inclusive o próprio diretor), Enviar, Rolar/Pausar, Voltar ao início, velocidade (1–10), tamanho da letra e Fechar. Roteiros salvos na tabela `roteiros` (migração `20261012000002_roteiros.sql`; só o dono salva). Mensagem no tópico `teleprompter` com `destinationIdentities` = só os escolhidos (o `/stage` nunca recebe); quem recebe aceita só de quem dirige (papel host ou atributo `diretor`). A posição sai do horário (`posicaoAgora`), em `em`, então mudar a letra não perde o ponto. Quem recarrega recebe o texto de novo. Na tela de quem recebe (`TeleprompterRecebido`): faixa no alto (perto da câmera), linha de leitura e controles locais (pausar, voltar, velocidade, letra, minimizar); um novo envio do diretor substitui os ajustes locais.
 
 ### Só voz
 - Participante sem câmera aparece como **cartão com avatar/iniciais, nome, etiqueta e anel animado** quando fala.
@@ -390,7 +393,11 @@ Etapas implementadas e publicadas, mas cujo critério de "Pronto" ainda não foi
 - **Etapa 12 (inteira):** compartilhar tela no Chrome desktop (convidado e diretor), "Mostrar na live"/"Tirar da live", layouts "Apresentação" e "Só a tela", janela estreita aparece inteira e sem esticar, áudio de uma aba (vídeo do YouTube) vai para a live só com a tela no ar, parar de compartilhar tira a tela da cena, botão escondido no celular. Critério: **tela compartilhada + câmeras na live.**
 - **Gravar:** abrir pelo estúdio, escolher arquivo e "esta aba" com áudio, gravar 5 min com música e vozes, parar pelo estúdio, conferir o MP4/WebM (imagem só do quadro, som da live); testar também sem live e numa gravação longa (30 min+).
 - **Biblioteca padrão:** rodar o SQL `20261012000001_biblioteca_padrao.sql`; conferir que as 12 músicas e os 19 efeitos aparecem com "Padrão" e sem lixeira; tocar na live não listada e ver se o YouTube reivindica alguma música.
-- Etapa 13 em diante: listar aqui o que for publicado sem teste.
+- **Etapa 13 (inteira):** rodar o SQL `20261012000002_roteiros.sql`; enviar um roteiro para um convidado e para si mesmo, rolar/pausar/voltar/velocidade/letra pelo diretor e pela própria pessoa, recarregar a página de quem recebe (o texto volta), salvar e abrir roteiro. Critério: **o texto rola só na tela do participante e nunca aparece na live** (conferir a gravação/YouTube).
+- **Diretor delegado:** passar a direção a um convidado (coroa), ele muda layout/palco, inicia intervalo/retomar, lê e destaca o chat, usa mídias e áudio do dono, envia teleprompter; tirar a direção (os controles somem e as APIs passam a negar).
+- **Cena lembrada:** rodar o SQL `20261012000003_cena_salva.sql`; mudar layout/tema/logo/fundo, sair de todos e entrar de novo (ou criar transmissão nova): o visual volta.
+- **Trilha na sala e efeitos:** a equipe ouve a música e os efeitos sem "Ouvir a live"; clicar de novo num efeito longo corta na live e no estúdio.
+- Etapa 14 em diante: listar aqui o que for publicado sem teste.
 
 ### Biblioteca padrão de áudio (feita em 2026-10-12)
 
@@ -411,6 +418,10 @@ Etapas implementadas e publicadas, mas cujo critério de "Pronto" ainda não foi
 
 Multistream (vários destinos ao mesmo tempo), gravação local em alta qualidade por participante, várias equipes/organizações, app nativo e servidor LiveKit próprio (avaliar só depois que o Marco 1 estiver estável).
 
-## 15. Ideias para depois (não implementar sem pedido)
+## 15. Diretor delegado (feito em 2026-10-12)
 
-- **Diretor delegado:** o criador pode escolher não ser o diretor e passar a direção para outra pessoa da sala (ou dividir com ela). Hoje o papel de host vem só da sessão do dono (`resolverAcesso`); para isso seria preciso um papel "diretor" concedido pelo dono durante a live, validado no servidor (ex.: lista de identities com permissão de diretor por transmissão) e aplicado em `/api/cena`, remover participante, convites etc. Avaliar depois do Marco 1.
+O dono pode passar a direção para um convidado durante a sessão (botão de coroa no cartão da pessoa, em Pessoas) e tirar quando quiser. Implementação: atributo `diretor` do participante, gravado só pelo servidor e só a pedido do dono (`POST /api/participante` com `diretor`). `lib/direcao.ts → obterDirecao(id, codigo)` é a regra única de "quem pode dirigir" (dono logado, ou convidado com código válido + cookie de identidade + atributo `diretor` na sala) e é usada em `/api/cena`, `/api/live`, `/api/youtube/chat`, `/api/token/stage`, `/api/participante` e na ação de remover pessoa. O delegado age com a autoridade do dono (tokens do YouTube e biblioteca vêm do dono, `donoId`) e vê o painel de direção completo, mas **não**: passa a direção adiante, usa o ponto, troca o convite, alterna "só diretor", remove o dono, envia ou apaga arquivos, nem usa banners/estilos/roteiros salvos (ele não tem login). As chamadas do delegado levam o `codigo` do convite.
+
+## 16. Ideias para depois (não implementar sem pedido)
+
+(nenhuma no momento)

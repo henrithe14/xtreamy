@@ -33,7 +33,9 @@ export function Cronometro({ desde }: { desde: number }) {
 }
 
 /** Botões do diretor: Iniciar / Intervalo / Retomar / Encerrar. */
-export function ControlesLive({ transmissaoId, cena, temCanal }: { transmissaoId: string; cena: Cena; temCanal: boolean }) {
+type PropsControles = { transmissaoId: string; codigo?: string; cena: Cena; temCanal: boolean };
+
+export function ControlesLive({ transmissaoId, codigo, cena, temCanal }: PropsControles) {
   const [executando, setExecutando] = useState<Acao>();
   const [erro, setErro] = useState<string>();
   const [confirmarFim, setConfirmarFim] = useState(false);
@@ -45,7 +47,7 @@ export function ControlesLive({ transmissaoId, cena, temCanal }: { transmissaoId
       const r = await fetch(`/api/live/${acao}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transmissaoId }),
+        body: JSON.stringify({ transmissaoId, codigo }),
       });
       if (!r.ok) {
         const dados = (await r.json().catch(() => ({}))) as { erro?: string };

@@ -9,7 +9,7 @@ import { Cronometro } from "@/components/estudio/ControlesLive";
  * Diretor: abre a saída numa janela 16:9 que grava a live neste computador (com ou
  * sem transmissão no YouTube). Mostra o estado e permite parar daqui.
  */
-export function BotaoGravar({ transmissaoId }: { transmissaoId: string }) {
+export function BotaoGravar({ transmissaoId, codigo }: { transmissaoId: string; codigo?: string }) {
   const janela = useRef<Window | null>(null);
   const [estado, setEstado] = useState<EstadoGravacao | "fechada">("fechada");
   const [desde, setDesde] = useState<number>();
@@ -39,7 +39,7 @@ export function BotaoGravar({ transmissaoId }: { transmissaoId: string }) {
       janela.current.focus();
       return;
     }
-    janela.current = window.open(`/stage?t=${transmissaoId}&gravar=1`, `xtreamy-gravacao-${transmissaoId}`, "popup,width=1280,height=720");
+    janela.current = window.open(`/stage?t=${transmissaoId}&gravar=1${codigo ? `&c=${encodeURIComponent(codigo)}` : ""}`, `xtreamy-gravacao-${transmissaoId}`, "popup,width=1280,height=720");
     setEstado("pronto");
   }
 

@@ -18,7 +18,8 @@ const ESTILOS: { id: EstiloBanner; nome: string; dica: string }[] = [
 const mesmo = (a: Banner | null, b: Banner) => a !== null && a.texto === b.texto && a.estilo === b.estilo;
 
 /** Aba Banners do diretor: criar, salvar, mostrar e ocultar. */
-export function PainelBanners({ cena, alterar }: { cena: Cena; alterar: Alterar }) {
+/** `salvos`: lista salva só para o dono (o diretor delegado não tem login). */
+export function PainelBanners({ cena, alterar, salvos: comSalvos = true }: { cena: Cena; alterar: Alterar; salvos?: boolean }) {
   const [texto, setTexto] = useState("");
   const [estilo, setEstilo] = useState<EstiloBanner>("faixa");
   const [salvos, setSalvos] = useState<BannerSalvo[]>();
@@ -35,11 +36,12 @@ export function PainelBanners({ cena, alterar }: { cena: Cena; alterar: Alterar 
   }
 
   useEffect(() => {
+    if (!comSalvos) return;
     void listarBanners().then((r) => {
       setSalvos(r.banners ?? []);
       setAviso(r.erro);
     });
-  }, []);
+  }, [comSalvos]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -87,6 +89,7 @@ export function PainelBanners({ cena, alterar }: { cena: Cena; alterar: Alterar 
             <Eye weight="bold" aria-hidden />
             Mostrar agora
           </Botao>
+          {comSalvos && (
           <Botao
             variante="secundario"
             disabled={salvando || !texto.trim()}
@@ -104,6 +107,7 @@ export function PainelBanners({ cena, alterar }: { cena: Cena; alterar: Alterar 
             <FloppyDisk weight="bold" aria-hidden />
             Salvar para depois
           </Botao>
+          )}
         </div>
         <MensagemErro>{aviso}</MensagemErro>
       </section>

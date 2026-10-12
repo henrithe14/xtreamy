@@ -167,6 +167,24 @@ export async function criarTokenPonto(transmissaoId: string, userId: string) {
   return token.toJwt();
 }
 
+/**
+ * Sala sem cena (transmissão nova, ou a sala esvaziou e o LiveKit a fechou): cria/
+ * preenche com a cena inicial. Sala com cena: não mexe (a sessão continua igual).
+ */
+export async function prepararSala(transmissaoId: string, cenaInicial: () => Promise<Cena>) {
+  const nome = nomeSala(transmissaoId);
+  const [sala] = await clienteSala().listRooms([nome]);
+  if (sala?.metadata) return;
+  const metadata = JSON.stringify(await cenaInicial());
+  if (sala) await clienteSala().updateRoomMetadata(nome, metadata);
+  else await clienteSala().createRoom({ name: nome, metadata, emptyTimeout: 300 });
+}
+
+/** Participante na sala (para conferir atributos gravados pelo servidor). */
+export async function obterParticipante(transmissaoId: string, identity: string) {
+  return clienteSala().getParticipant(nomeSala(transmissaoId), identity);
+}
+
 export async function removerDaSala(transmissaoId: string, identity: string) {
   await clienteSala().removeParticipant(nomeSala(transmissaoId), identity);
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { resolverAcesso } from "@/lib/acesso";
+import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { obterTransmissaoDoUsuario, urlConvite } from "@/lib/transmissoes";
 import { ConviteInvalido } from "@/components/entrar/ConviteInvalido";
 import { Estudio } from "@/components/estudio/Estudio";
@@ -44,6 +45,15 @@ async function Acesso({ params, searchParams }: Pick<PageProps<"/t/[id]/estudio"
       temCanal = Boolean(transmissao.youtube_broadcast_id && transmissao.youtube_stream_id);
       temChat = Boolean(transmissao.live_chat_id);
     }
+  } else {
+    // O convidado pode receber a direção durante a sessão: só os sinais (nada secreto).
+    const { data } = await criarClienteAdmin()
+      .from("transmissoes")
+      .select("youtube_broadcast_id, youtube_stream_id, live_chat_id")
+      .eq("id", id)
+      .maybeSingle();
+    temCanal = Boolean(data?.youtube_broadcast_id && data.youtube_stream_id);
+    temChat = Boolean(data?.live_chat_id);
   }
 
   return (

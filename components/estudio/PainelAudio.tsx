@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRoomContext } from "@livekit/components-react";
 import { MusicNotes, Pause, Play, SkipForward, SpeakerHigh, Stop, Trash } from "@phosphor-icons/react";
 import { excluirAtivo, listarAtivos, type Ativo } from "@/lib/acoes/ativos";
-import { codificarEfeito, lerDuracaoUrl, tocarEfeito, TOPICO_EFEITO } from "@/lib/audioLive";
+import { codificarEfeito, efeitoTocando, lerDuracaoUrl, ouvirEfeitos, tocarEfeito, TOPICO_EFEITO, versaoDosEfeitos } from "@/lib/audioLive";
 import {
   posicaoMusica,
   posicionarMusica,
@@ -33,22 +33,25 @@ const DUCKING: { id: NivelDucking; nome: string }[] = [
 const CHAVE_VOLUME_EFEITOS = "estudio:volume-efeitos";
 
 /** Aba Áudio do diretor: música de fundo (playlist) e efeitos sonoros. */
-export function PainelAudio({ cena, alterar, ouvindo }: { cena: Cena; alterar: Alterar; ouvindo: boolean }) {
+type PropsAudio = { cena: Cena; alterar: Alterar; sala?: { transmissaoId: string; codigo: string } };
+
+/** `sala`: diretor delegado (lê a biblioteca do dono; não envia nem apaga). */
+export function PainelAudio({ cena, alterar, sala }: PropsAudio) {
   const [ativos, setAtivos] = useState<Ativo[]>([]);
   const [aviso, setAviso] = useState<string>();
 
   const carregar = useCallback(async () => {
-    const r = await listarAtivos();
+    const r = await listarAtivos(sala);
     setAtivos(r.ativos ?? []);
     setAviso(r.erro);
-  }, []);
+  }, [sala]);
 
   useEffect(() => {
-    void listarAtivos().then((r) => {
+    void listarAtivos(sala).then((r) => {
       setAtivos(r.ativos ?? []);
       setAviso(r.erro);
     });
-  }, []);
+  }, [sala]);
 
   const excluir = async (a: Ativo) => {
     await excluirAtivo(a.id);
@@ -68,11 +71,12 @@ export function PainelAudio({ cena, alterar, ouvindo }: { cena: Cena; alterar: A
       <SecaoMusica
         cena={cena}
         alterar={alterar}
-        musicas={ativos.filter((a) => a.tipo === "musica")}
+        musicas={ativos.filter((a) => a.tipo === "musica").map((a) => (sala ? { ...a, sistema: true } : a))}
+        podeEnviar={!sala}
         aoEnviar={carregar}
         aoExcluir={excluir}
       />
-      <SecaoEfeitos efeitos={ativos.filter((a) => a.tipo === "efeito")} ouvindo={ouvindo} aoEnviar={carregar} aoExcluir={excluir} />
+      <SecaoEfeitos podeEnviar={!sala} efeitos={ativos.filter((a) => a.tipo === "efeito").map((a) => (sala ? { ...a, sistema: true } : a))} aoEnviar={carregar} aoExcluir={excluir} />
     </div>
   );
 }
@@ -95,9 +99,10 @@ type PropsMusica = {
   musicas: Ativo[];
   aoEnviar: () => void;
   aoExcluir: (a: Ativo) => void;
+  podeEnviar: boolean;
 };
 
-function SecaoMusica({ cena, alterar, musicas, aoEnviar, aoExcluir }: PropsMusica) {
+function SecaoMusica({ cena, alterar, musicas, aoEnviar, aoExcluir, podeEnviar }: PropsMusica) {
   const [preparando, setPreparando] = useState(false);
   const [erro, setErro] = useState<string>();
   const m = cena.musica;
@@ -138,7 +143,7 @@ function SecaoMusica({ cena, alterar, musicas, aoEnviar, aoExcluir }: PropsMusic
 
   return (
     <Secao titulo="Música de fundo" dica="Toca na live em loop, pela lista abaixo. Baixa sozinha quando alguém fala.">
-      <Envio tipo="musica" aoEnviar={aoEnviar} rotulo="Enviar música (MP3, WAV ou OGG)" />
+      {podeEnviar && <Envio tipo="musica" aoEnviar={aoEnviar} rotulo="Enviar música (MP3, WAV ou OGG)" />}
       <MensagemErro>{erro}</MensagemErro>
 
       {m && (
@@ -245,9 +250,9 @@ function SecaoMusica({ cena, alterar, musicas, aoEnviar, aoExcluir }: PropsMusic
   );
 }
 
-type PropsEfeitos = { efeitos: Ativo[]; ouvindo: boolean; aoEnviar: () => void; aoExcluir: (a: Ativo) => void };
+type PropsEfeitos = { efeitos: Ativo[]; aoEnviar: () => void; aoExcluir: (a: Ativo) => void; podeEnviar: boolean };
 
-function SecaoEfeitos({ efeitos, ouvindo, aoEnviar, aoExcluir }: PropsEfeitos) {
+function SecaoEfeitos({ efeitos, aoEnviar, aoExcluir, podeEnviar }: PropsEfeitos) {
   const room = useRoomContext();
   const [volume, setVolume] = useState(0.8);
   const [erro, setErro] = useState<string>();
@@ -268,13 +273,18 @@ function SecaoEfeitos({ efeitos, ouvindo, aoEnviar, aoExcluir }: PropsEfeitos) {
     } catch {}
   }
 
+  // Re-renderiza quando um efeito começa ou termina (o botão fica aceso enquanto toca).
+  useSyncExternalStore(ouvirEfeitos, versaoDosEfeitos, () => 0);
+
   async function disparar(a: Ativo) {
     setErro(undefined);
-    const pedido = { url: a.url, volume };
+    // Clicar de novo enquanto toca corta o efeito (na live e no estúdio).
+    const acao: "tocar" | "parar" = efeitoTocando(a.url) ? "parar" : "tocar";
+    const pedido = { url: a.url, volume, acao };
     try {
-      // Vai para o /stage (a live), que toca uma vez. Quem não é diretor ignora.
+      // Vai para todos (a live e a equipe). Quem não dirige ignora.
       await room.localParticipant.publishData(codificarEfeito(pedido), { reliable: true, topic: TOPICO_EFEITO });
-      if (ouvindo) tocarEfeito(pedido);
+      tocarEfeito(pedido); // a própria mensagem não volta para quem envia
     } catch {
       setErro("Não foi possível tocar o efeito. Verifique a conexão.");
     }
@@ -282,7 +292,7 @@ function SecaoEfeitos({ efeitos, ouvindo, aoEnviar, aoExcluir }: PropsEfeitos) {
 
   return (
     <Secao titulo="Efeitos sonoros" dica="Cada botão toca uma vez na live.">
-      <Envio tipo="efeito" aoEnviar={aoEnviar} rotulo="Enviar efeito (MP3, WAV ou OGG)" />
+      {podeEnviar && <Envio tipo="efeito" aoEnviar={aoEnviar} rotulo="Enviar efeito (MP3, WAV ou OGG)" />}
       <ControleVolume rotulo="Volume dos efeitos" valor={volume} aoMudar={mudarVolume} imediato />
       <MensagemErro>{erro}</MensagemErro>
       {efeitos.length > 0 && (
@@ -292,9 +302,17 @@ function SecaoEfeitos({ efeitos, ouvindo, aoEnviar, aoExcluir }: PropsEfeitos) {
               <button
                 type="button"
                 onClick={() => void disparar(a)}
-                className="flex min-h-16 w-full flex-col items-center justify-center gap-1 rounded-md bg-white/[0.06] px-2 py-2 text-xs font-semibold ring-1 ring-white/10 ring-inset hover:bg-white/10 active:bg-destaque/25"
+                aria-pressed={efeitoTocando(a.url)}
+                title={efeitoTocando(a.url) ? "Clique para cortar" : "Clique para tocar"}
+                className={`flex min-h-16 w-full flex-col items-center justify-center gap-1 rounded-md px-2 py-2 text-xs font-semibold ring-1 ring-inset ${
+                  efeitoTocando(a.url) ? "bg-destaque/25 ring-destaque" : "bg-white/[0.06] ring-white/10 hover:bg-white/10"
+                }`}
               >
-                <SpeakerHigh weight="bold" className="size-5 text-destaque" aria-hidden />
+                {efeitoTocando(a.url) ? (
+                  <Stop weight="bold" className="size-5 text-destaque" aria-hidden />
+                ) : (
+                  <SpeakerHigh weight="bold" className="size-5 text-destaque" aria-hidden />
+                )}
                 <span className="line-clamp-2 text-center break-all">{a.nome}</span>
               </button>
               {!a.sistema && (

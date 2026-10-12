@@ -38,6 +38,8 @@ export type LinhaDestino = {
 type LinhaDestinoCompleta = LinhaDestino & { refresh_token_cifrado: string };
 
 export type LinhaBanner = { id: string; user_id: string; texto: string; estilo: "faixa" | "letreiro"; criado_em: string };
+export type LinhaCenaSalva = { user_id: string; definicao: unknown; atualizado_em: string };
+export type LinhaRoteiro = { id: string; user_id: string; titulo: string; texto: string; criado_em: string };
 export type LinhaEstilo = { id: string; user_id: string; nome: string; definicao: unknown; criado_em: string };
 
 export type LinhaAtivo = {
@@ -73,6 +75,18 @@ export type Database = {
         Row: LinhaEstilo;
         Insert: Pick<LinhaEstilo, "nome" | "definicao"> & Partial<Pick<LinhaEstilo, "user_id">>;
         Update: Partial<LinhaEstilo>;
+        Relationships: [];
+      };
+      cena_salva: {
+        Row: LinhaCenaSalva;
+        Insert: Pick<LinhaCenaSalva, "user_id" | "definicao"> & Partial<Pick<LinhaCenaSalva, "atualizado_em">>;
+        Update: Partial<LinhaCenaSalva>;
+        Relationships: [];
+      };
+      roteiros: {
+        Row: LinhaRoteiro;
+        Insert: Pick<LinhaRoteiro, "titulo" | "texto"> & Partial<Pick<LinhaRoteiro, "user_id">>;
+        Update: Partial<LinhaRoteiro>;
         Relationships: [];
       };
       ativos: {

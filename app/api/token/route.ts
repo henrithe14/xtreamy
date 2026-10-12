@@ -1,7 +1,9 @@
 import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { resolverAcesso } from "@/lib/acesso";
-import { criarTokenParticipante } from "@/lib/livekit";
+import { criarTokenParticipante, prepararSala } from "@/lib/livekit";
+import { cenaInicialDoDono } from "@/lib/cenaSalva";
+import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { LIMITES_IDENTIDADE } from "@/lib/preferencias";
 import { ATRIBUTO_ESPELHAR } from "@/lib/participante";
 
@@ -55,6 +57,14 @@ export async function POST(request: Request) {
       maxAge: 60 * 60 * 24,
     });
   }
+
+  // Sala nova começa com o último visual do criador (layout, tema, logo, fundo…).
+  await prepararSala(transmissaoId, async () => {
+    const donoId =
+      acesso.userId ??
+      (await criarClienteAdmin().from("transmissoes").select("user_id").eq("id", transmissaoId).maybeSingle()).data?.user_id;
+    return cenaInicialDoDono(donoId ?? "");
+  }).catch(() => undefined);
 
   try {
     const token = await criarTokenParticipante({

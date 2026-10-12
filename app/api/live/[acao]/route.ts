@@ -1,10 +1,9 @@
-import { exigirUsuario } from "@/lib/auth";
-import { resolverAcesso } from "@/lib/acesso";
+import { obterDirecao } from "@/lib/direcao";
 import { accessTokenDoDestino } from "@/lib/destinos";
 import { alterarCenaNoServidor, iniciarEgress, pararEgress } from "@/lib/livekit";
-import { criarClienteServidor } from "@/lib/supabase/servidor";
+import { criarClienteAdmin } from "@/lib/supabase/admin";
 import type { StatusTransmissao } from "@/lib/transmissao";
-import { obterTransmissaoDoUsuario, type Transmissao } from "@/lib/transmissoes";
+import type { Transmissao } from "@/lib/transmissoes";
 import { enderecoRtmp, ErroYouTube, statusStream, transicionar } from "@/lib/youtube";
 import { ehVideo, urlPublica } from "@/lib/ativos";
 import type { Midia } from "@/lib/cena";
@@ -26,19 +25,20 @@ export async function POST(request: Request, ctx: RouteContext<"/api/live/[acao]
   if (!acao) return Response.json({ erro: "Ação desconhecida." }, { status: 404 });
 
   let transmissaoId = "";
+  let codigo: string | undefined;
   try {
-    const corpo = (await request.json()) as { transmissaoId?: unknown };
+    const corpo = (await request.json()) as { transmissaoId?: unknown; codigo?: unknown };
     transmissaoId = typeof corpo.transmissaoId === "string" ? corpo.transmissaoId : "";
+    codigo = typeof corpo.codigo === "string" && corpo.codigo ? corpo.codigo : undefined;
   } catch {}
 
-  const acesso = await resolverAcesso(transmissaoId, undefined);
-  if (acesso?.papel !== "host") return Response.json({ erro: "Apenas o diretor controla a live." }, { status: 403 });
-  const usuario = await exigirUsuario();
-  const t = await obterTransmissaoDoUsuario(transmissaoId);
-  if (!t) return Response.json({ erro: "Transmissão não encontrada." }, { status: 404 });
+  // Dono ou diretor delegado; o YouTube e a biblioteca são sempre os do dono.
+  const direcao = await obterDirecao(transmissaoId, codigo);
+  if (!direcao) return Response.json({ erro: "Apenas o diretor controla a live." }, { status: 403 });
+  const t = direcao.transmissao;
 
   try {
-    await executar(acao, t, usuario.id);
+    await executar(acao, t, direcao.donoId);
     return Response.json({ ok: true });
   } catch (e) {
     const mensagem =
@@ -49,16 +49,18 @@ export async function POST(request: Request, ctx: RouteContext<"/api/live/[acao]
 }
 
 async function salvarStatus(id: string, status: StatusTransmissao, extra: Partial<Transmissao> = {}) {
-  const supabase = await criarClienteServidor();
+  // Admin: o diretor delegado não tem sessão (a permissão já foi conferida acima).
+  const supabase = criarClienteAdmin();
   await supabase.from("transmissoes").update({ status, ...extra }).eq("id", id);
 }
 
 /** Mídia "Volto logo" mais recente do diretor, em loop, para o intervalo (ou null). */
-async function midiaVoltoLogo(): Promise<Midia | null> {
-  const supabase = await criarClienteServidor();
+async function midiaVoltoLogo(donoId: string): Promise<Midia | null> {
+  const supabase = criarClienteAdmin();
   const { data } = await supabase
     .from("ativos")
     .select("caminho, mime")
+    .eq("user_id", donoId)
     .eq("tipo", "midia")
     .eq("metadados->>categoria", "volto-logo")
     .order("criado_em", { ascending: false })
@@ -74,7 +76,7 @@ async function executar(acao: Acao, t: Transmissao, userId: string) {
   if (acao === "intervalo") {
     if (t.status !== "ao_vivo") throw new ErroLive("A live não está no ar.");
     // Com mídia "Volto logo" enviada, ela toca em tela cheia; sem, a tela simples da marca.
-    const midia = await midiaVoltoLogo().catch(() => null);
+    const midia = await midiaVoltoLogo(userId).catch(() => null);
     await alterarCenaNoServidor(t.id, (c) => ({ status: "intervalo", midia: midia ?? c.midia }));
     await salvarStatus(t.id, "intervalo");
     return;

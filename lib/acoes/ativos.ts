@@ -3,6 +3,8 @@
 import { exigirUsuario } from "@/lib/auth";
 import { ACEITOS, BUCKET_ATIVOS, CATEGORIAS, LIMITE_ARQUIVO, urlPublica, type CategoriaMidia, type TipoAtivo } from "@/lib/ativos";
 import { criarClienteServidor } from "@/lib/supabase/servidor";
+import { criarClienteAdmin } from "@/lib/supabase/admin";
+import { obterDirecao } from "@/lib/direcao";
 
 export type Ativo = {
   id: string;
@@ -19,13 +21,21 @@ export type Ativo = {
 const AVISO_SQL = "Os ativos ainda não estão disponíveis (falta rodar o SQL da Etapa 10 no Supabase).";
 const TIPOS = Object.keys(ACEITOS) as TipoAtivo[];
 
-export async function listarAtivos(): Promise<{ ativos?: Ativo[]; erro?: string }> {
-  await exigirUsuario();
-  const supabase = await criarClienteServidor();
-  const { data, error } = await supabase
-    .from("ativos")
-    .select("id, user_id, tipo, nome, caminho, mime, metadados")
-    .order("criado_em", { ascending: false });
+/**
+ * Ativos do usuário logado + biblioteca padrão. Com `sala` (diretor delegado, sem
+ * login), lê a biblioteca do dono da transmissão, só para usar (não envia nem apaga).
+ */
+export async function listarAtivos(sala?: { transmissaoId: string; codigo?: string }): Promise<{ ativos?: Ativo[]; erro?: string }> {
+  let consulta;
+  if (sala?.codigo) {
+    const direcao = await obterDirecao(sala.transmissaoId, sala.codigo);
+    if (!direcao) return { erro: "Apenas o diretor usa a biblioteca." };
+    consulta = criarClienteAdmin().from("ativos").select("id, user_id, tipo, nome, caminho, mime, metadados").or(`user_id.eq.${direcao.donoId},user_id.is.null`);
+  } else {
+    await exigirUsuario();
+    consulta = (await criarClienteServidor()).from("ativos").select("id, user_id, tipo, nome, caminho, mime, metadados");
+  }
+  const { data, error } = await consulta.order("criado_em", { ascending: false });
   if (error) return { erro: AVISO_SQL };
   return {
     ativos: data.map((a) => {

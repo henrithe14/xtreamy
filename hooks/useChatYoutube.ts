@@ -11,7 +11,7 @@ type Estado = { mensagens: MensagemChat[]; erro?: string; encerrado: boolean; ca
  * Lê o chat do YouTube pelo servidor, respeitando o intervalo que o YouTube pede
  * (cota diária). Só roda enquanto `ativo` (aba aberta / live acontecendo).
  */
-export function useChatYoutube(transmissaoId: string, ativo: boolean) {
+export function useChatYoutube(transmissaoId: string, ativo: boolean, codigo?: string) {
   const [estado, setEstado] = useState<Estado>({ mensagens: [], encerrado: false, carregando: true });
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export function useChatYoutube(transmissaoId: string, ativo: boolean) {
 
     async function ler() {
       try {
-        const url = `/api/youtube/chat?t=${encodeURIComponent(transmissaoId)}${pagina ? `&pagina=${encodeURIComponent(pagina)}` : ""}`;
+        const url = `/api/youtube/chat?t=${encodeURIComponent(transmissaoId)}${codigo ? `&c=${encodeURIComponent(codigo)}` : ""}${pagina ? `&pagina=${encodeURIComponent(pagina)}` : ""}`;
         const r = await fetch(url, { cache: "no-store" });
         const dados = (await r.json()) as {
           mensagens?: MensagemChat[];
@@ -53,7 +53,7 @@ export function useChatYoutube(transmissaoId: string, ativo: boolean) {
       cancelado = true;
       window.clearTimeout(espera);
     };
-  }, [transmissaoId, ativo]);
+  }, [transmissaoId, ativo, codigo]);
 
   return estado;
 }

@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useDataChannel, useSpeakingParticipants } from "@livekit/components-react";
 import { FATOR_DUCKING, posicaoMusica, type Cena, type Musica } from "@/lib/cena";
 import { lerEfeito, tentarTocar, tocarEfeito, TOPICO_EFEITO } from "@/lib/audioLive";
-import { ATRIBUTO_AUDIO_PRIVADO, lerMetadados } from "@/lib/participante";
+import { ATRIBUTO_AUDIO_PRIVADO, ATRIBUTO_DIRETOR, lerMetadados } from "@/lib/participante";
 import { AudioPalco, usePalcoVisivel, type SaidaLocal } from "@/components/stage/Composicao";
 import { conectarElemento, origemMix } from "@/lib/mixGravacao";
 
@@ -14,21 +14,30 @@ import { conectarElemento, origemMix } from "@/lib/mixGravacao";
  * O som de mídias e vinhetas sai da própria Composicao (comSom).
  */
 export function AudioLive({ cena, saida = "tudo" }: { cena: Cena; saida?: SaidaLocal }) {
+  return (
+    <>
+      <AudioPalco cena={cena} saida={saida} />
+      <TrilhaNaSala cena={cena} />
+    </>
+  );
+}
+
+/**
+ * Música de fundo (com ducking) e efeitos sonoros. Na live, junto com as vozes; no
+ * estúdio, para toda a equipe ouvir o que está tocando (sem precisar de "Ouvir a live").
+ */
+export function TrilhaNaSala({ cena }: { cena: Cena }) {
   const abaixar = useAbaixarMusica(cena);
 
-  // Efeitos: só pedidos do diretor (o papel vem do metadata, gravado pelo servidor).
+  // Efeitos: só pedidos de quem dirige (papel e direção são gravados pelo servidor).
   useDataChannel(TOPICO_EFEITO, (msg) => {
-    if (!msg.from || lerMetadados(msg.from.metadata).papel !== "host") return;
+    const de = msg.from;
+    if (!de || (lerMetadados(de.metadata).papel !== "host" && de.attributes[ATRIBUTO_DIRETOR] !== "1")) return;
     const pedido = lerEfeito(msg.payload);
     if (pedido) tocarEfeito(pedido);
   });
 
-  return (
-    <>
-      <AudioPalco cena={cena} saida={saida} />
-      {cena.musica && <MusicaFundo musica={cena.musica} silenciar={cena.status === "encerrada"} abaixar={abaixar} />}
-    </>
-  );
+  return cena.musica ? <MusicaFundo musica={cena.musica} silenciar={cena.status === "encerrada"} abaixar={abaixar} /> : null;
 }
 
 /**
