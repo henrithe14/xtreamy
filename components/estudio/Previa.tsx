@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowSquareOut, ArrowsIn, ArrowsOut } from "@phosphor-icons/react";
+import { ArrowSquareOut, ArrowsIn, ArrowsOut, Headphones } from "@phosphor-icons/react";
 import type { Cena } from "@/lib/cena";
 import { Composicao } from "@/components/stage/Composicao";
 import { StatusTally } from "@/components/ui/StatusTally";
@@ -11,6 +11,9 @@ type Props = {
   /** Só o diretor pode abrir a saída (/stage) numa aba. */
   urlSaida?: string;
   aoTerminarVinheta?: () => void;
+  /** Só o diretor: ouvir a mixagem da live no lugar do som da sala. */
+  ouvindo?: boolean;
+  aoAlternarOuvir?: () => void;
 };
 
 const CHAVE_TAMANHO = "estudio:previa-compacta";
@@ -19,7 +22,7 @@ const CHAVE_TAMANHO = "estudio:previa-compacta";
  * Prévia ao vivo do que vai ao ar, com as marcas de área segura. A altura é limitada
  * (normal ou compacta, lembrada no navegador) para sobrar espaço para as pessoas.
  */
-export function Previa({ cena, urlSaida, aoTerminarVinheta }: Props) {
+export function Previa({ cena, urlSaida, aoTerminarVinheta, ouvindo = false, aoAlternarOuvir }: Props) {
   const [compacta, setCompacta] = useState(false);
 
   useEffect(() => {
@@ -53,6 +56,20 @@ export function Previa({ cena, urlSaida, aoTerminarVinheta }: Props) {
           <StatusTally status={cena.status} />
         </div>
         <div className="flex items-center gap-1">
+          {aoAlternarOuvir && (
+            <button
+              type="button"
+              onClick={aoAlternarOuvir}
+              aria-pressed={ouvindo}
+              title="Ouve só o que vai ao ar (use fones). A equipe no bastidor fica muda para você enquanto estiver ligado."
+              className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm ${
+                ouvindo ? "bg-destaque/20 text-texto ring-1 ring-destaque" : "text-texto-suave hover:bg-white/[0.06] hover:text-texto"
+              }`}
+            >
+              <Headphones weight="fill" className="size-4" aria-hidden />
+              <span className="deitado:sr-only">{ouvindo ? "Ouvindo a live" : "Ouvir a live"}</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={alternar}
@@ -75,9 +92,14 @@ export function Previa({ cena, urlSaida, aoTerminarVinheta }: Props) {
         </div>
       </div>
       <div className="relative overflow-hidden rounded-xl ring-1 ring-white/10">
-        <Composicao cena={cena} previa aoTerminarVinheta={aoTerminarVinheta} />
+        <Composicao cena={cena} previa comSom={ouvindo} aoTerminarVinheta={aoTerminarVinheta} />
         <MarcasDeCanto />
       </div>
+      {ouvindo && (
+        <p role="status" className="text-xs text-texto-suave">
+          Você está ouvindo só a live. Quem está no bastidor fica mudo para você até desligar.
+        </p>
+      )}
     </section>
   );
 }

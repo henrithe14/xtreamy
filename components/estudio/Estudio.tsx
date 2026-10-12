@@ -56,6 +56,7 @@ export function Estudio(props: Props) {
             nome,
             etiqueta: preferencias.etiqueta,
             modoHost: preferencias.modoHost,
+            espelhar: preferencias.espelhar,
           }),
         });
         const dados = (await resposta.json()) as { token?: string; erro?: string };

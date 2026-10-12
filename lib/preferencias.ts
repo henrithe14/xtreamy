@@ -16,6 +16,8 @@ export type Preferencias = {
   resolucao: Resolucao;
   cancelamentoEco: boolean;
   reducaoRuido: boolean;
+  /** Câmera espelhada, também na live. */
+  espelhar: boolean;
 };
 
 export const PREFERENCIAS_PADRAO: Preferencias = {
@@ -29,6 +31,7 @@ export const PREFERENCIAS_PADRAO: Preferencias = {
   resolucao: "h720",
   cancelamentoEco: true,
   reducaoRuido: true,
+  espelhar: false,
 };
 
 export const LIMITES_IDENTIDADE = { nome: 40, etiqueta: 40 } as const;

@@ -6,7 +6,8 @@ import { LiveKitRoom, useAudioPlayback, useConnectionState, useRoomContext } fro
 import EgressHelper from "@livekit/egress-sdk";
 import { ConnectionState, type RoomOptions } from "livekit-client";
 import { useCena } from "@/hooks/useCena";
-import { AudioPalco, Composicao } from "@/components/stage/Composicao";
+import { Composicao } from "@/components/stage/Composicao";
+import { AudioLive } from "@/components/stage/AudioLive";
 
 type Conexao = { url: string; token: string } | { erro: string } | null;
 
@@ -81,7 +82,7 @@ function Saida({ egress }: { egress: boolean }) {
       <div className="w-[min(100vw,calc(100vh*16/9))]">
         <Composicao cena={cena} comSom />
       </div>
-      <AudioPalco cena={cena} />
+      <AudioLive cena={cena} />
       {/* Nunca mostrar botão na imagem que vai ao ar. */}
       {!egress && <LiberarSom />}
     </div>

@@ -10,13 +10,15 @@ type Props = {
   nome: string;
   etiqueta: string;
   falando: boolean;
+  /** Câmera espelhada (vale também na live). */
+  espelhar: boolean;
 };
 
 /**
- * Prévia 16:9 da própria câmera. O espelhamento é só aqui (CSS): quem assiste vê
- * a imagem normal. Por cima, a etiqueta como vai aparecer na live.
+ * Prévia 16:9 da própria câmera, como vai aparecer na live (espelhada só se a pessoa
+ * escolher; aí a live também espelha). Por cima, a etiqueta como vai aparecer na live.
  */
-export function PreviaCamera({ video, carregando, nome, etiqueta, falando }: Props) {
+export function PreviaCamera({ video, carregando, nome, etiqueta, falando, espelhar }: Props) {
   const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export function PreviaCamera({ video, carregando, nome, etiqueta, falando }: Pro
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-superficie-2 ring-1 ring-white/10">
       {video ? (
-        <video ref={ref} muted playsInline autoPlay className="size-full -scale-x-100 object-cover" />
+        <video ref={ref} muted playsInline autoPlay className={`size-full object-cover ${espelhar ? "-scale-x-100" : ""}`} />
       ) : (
         <CartaoSoVoz nome={nome} falando={falando} className="absolute inset-0" />
       )}

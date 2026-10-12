@@ -17,7 +17,7 @@ import { urlFonte, type Estilo } from "@/lib/estilo";
 import { BannerLive, CartaoComentario, EtiquetaNome } from "@/components/stage/Artes";
 import { FundoEnviado, LogoLive, MidiaTelaCheia, OverlayLive, VinhetaLive } from "@/components/stage/Midias";
 import { obterLayout, type Slot } from "@/lib/layouts";
-import { ATRIBUTO_AUDIO_PRIVADO, lerMetadados } from "@/lib/participante";
+import { ATRIBUTO_AUDIO_PRIVADO, ATRIBUTO_ESPELHAR, lerMetadados } from "@/lib/participante";
 import { CartaoSoVoz } from "@/components/ui/CartaoSoVoz";
 
 /**
@@ -175,6 +175,7 @@ function SlotPessoa({ participante, slot, camera, estilo, cores, mostrarEtiqueta
   const { name, metadata } = useParticipantInfo({ participant: participante });
   const { etiqueta } = lerMetadados(metadata);
   const falando = useIsSpeaking(participante);
+  const espelhado = useParticipantAttribute(ATRIBUTO_ESPELHAR, { participant: participante }) === "1";
   const comVideo = camera !== undefined && !camera.publication.isMuted;
   const nome = name || "Participante";
 
@@ -195,7 +196,7 @@ function SlotPessoa({ participante, slot, camera, estilo, cores, mostrarEtiqueta
         }}
       >
         {comVideo ? (
-          <VideoTrack trackRef={camera} className="size-full object-cover" />
+          <VideoTrack trackRef={camera} className={`size-full object-cover ${espelhado ? "-scale-x-100" : ""}`} />
         ) : (
           <CartaoSoVoz nome={nome} falando={falando} className="absolute inset-0" />
         )}
@@ -233,7 +234,8 @@ export function AudioPalco({ cena }: { cena: Cena }) {
   return (
     <>
       {microfones
-        .filter((m) => visiveis.has(m.participant.identity))
+        // A própria voz nunca volta (no estúdio, com "Ouvir a live" ligado).
+        .filter((m) => visiveis.has(m.participant.identity) && !m.participant.isLocal)
         .map((m) => (
           <AudioSeNaoPrivado key={m.participant.identity} trackRef={m} />
         ))}

@@ -26,8 +26,9 @@ import {
   SpeakerSimpleHigh,
   SpeakerSimpleSlash as IconeMudoLive,
   UserFocus,
+  FlipHorizontal,
 } from "@phosphor-icons/react";
-import { useAlternarMudoParaLive, useMudoParaLive } from "@/hooks/useAudioPrivado";
+import { useAlternarEspelho, useAlternarMudoParaLive, useEspelhado, useMudoParaLive } from "@/hooks/useAudioPrivado";
 import { usePonto } from "@/hooks/usePonto";
 import { ehPonto, lerMetadados } from "@/lib/participante";
 import { useCena, useControleCena } from "@/hooks/useCena";
@@ -44,6 +45,8 @@ import { ChatEstudio, PainelComentarios } from "@/components/estudio/PainelComen
 import { PainelEstilo } from "@/components/estudio/PainelEstilo";
 import { PainelBanners } from "@/components/estudio/PainelBanners";
 import { PainelMidia } from "@/components/estudio/PainelMidia";
+import { PainelAudio } from "@/components/estudio/PainelAudio";
+import { AudioLive } from "@/components/stage/AudioLive";
 import { ControlesLive, Cronometro } from "@/components/estudio/ControlesLive";
 import { StatusTally } from "@/components/ui/StatusTally";
 
@@ -83,16 +86,29 @@ export function Sala({
   const { localParticipant } = useLocalParticipant();
   const { metadata } = useParticipantInfo({ participant: localParticipant });
   const soDiretor = metadata ? lerMetadados(metadata).soDiretor : soDiretorInicial;
+  // "Ouvir a live": o diretor troca o som da sala pela mixagem que vai ao ar.
+  const [ouvindoLive, setOuvindoLive] = useState(false);
+  const cenaSala = useCena();
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    // Diretor no desktop: a página não rola; a prévia fica fixa e só a lateral rola.
+    <div className={`flex min-h-dvh flex-col ${souHost ? "lg:h-dvh lg:overflow-hidden" : ""}`}>
       <BarraSuperior titulo={titulo} papel={papel} soDiretor={soDiretor} transmissaoId={transmissaoId} temCanal={temCanal} />
       <AvisoSom />
       {falhaAparelho && <AvisoAparelho falha={falhaAparelho} aoFechar={aoFecharAvisoAparelho} />}
 
       {!souHost && <AvisoPontoRecebido />}
 
-      {souHost ? <PainelDiretor transmissaoId={transmissaoId} temChat={temChat} /> : <PainelConvidado />}
+      {souHost ? (
+        <PainelDiretor
+          transmissaoId={transmissaoId}
+          temChat={temChat}
+          ouvindo={ouvindoLive}
+          aoAlternarOuvir={() => setOuvindoLive((v) => !v)}
+        />
+      ) : (
+        <PainelConvidado />
+      )}
 
       <nav
         aria-label="Controles"
@@ -101,22 +117,27 @@ export function Sala({
         <AlternarMidia fonte={Track.Source.Microphone} />
         {!soDiretor && <AlternarMidia fonte={Track.Source.Camera} />}
         {!soDiretor && <BotaoMudoParaLive transmissaoId={transmissaoId} codigo={codigo} />}
+        {!soDiretor && <BotaoEspelhar transmissaoId={transmissaoId} codigo={codigo} />}
         {souHost && urlConvite && <BotaoConvidar transmissaoId={transmissaoId} urlInicial={urlConvite} />}
         <BotaoBarra rotulo="Sair" perigo onClick={aoSair}>
           <SignOut weight="fill" />
         </BotaoBarra>
       </nav>
 
-      {/* Toca o áudio de todos na sala (a equipe se ouve). */}
-      <RoomAudioRenderer />
+      {/* Toca o áudio de todos na sala (a equipe se ouve), ou só a live para o diretor. */}
+      {souHost && ouvindoLive ? <AudioLive cena={cenaSala} /> : <RoomAudioRenderer />}
     </div>
   );
 }
 
 /** Diretor: prévia + disposições à esquerda, pessoas (palco/bastidor) à direita. */
-function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temChat: boolean }) {
+type PropsDiretor = { transmissaoId: string; temChat: boolean; ouvindo: boolean; aoAlternarOuvir: () => void };
+
+function PainelDiretor({ transmissaoId, temChat, ouvindo, aoAlternarOuvir }: PropsDiretor) {
   const { cena, alterar, erro } = useControleCena(transmissaoId);
-  const [abaLateral, setAbaLateral] = useState<"pessoas" | "comentarios" | "estilo" | "banners" | "midia">("pessoas");
+  const [abaLateral, setAbaLateral] = useState<"pessoas" | "comentarios" | "estilo" | "banners" | "midia" | "audio">(
+    "pessoas",
+  );
 
   async function editarEtiqueta(identity: string, etiqueta: string) {
     await fetch("/api/participante", {
@@ -127,11 +148,13 @@ function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temC
   }
   const ponto = usePonto(transmissaoId);
   const mudo = useAlternarMudoParaLive(transmissaoId);
+  const espelho = useAlternarEspelho(transmissaoId);
   const participantes = useRemoteParticipants();
+  const localIdentity = useLocalParticipant().localParticipant.identity;
   const nomeAlvo = participantes.find((p) => p.identity === ponto.alvo)?.name;
   return (
-    <main className="mx-auto grid w-full max-w-[100rem] flex-1 gap-4 p-3 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] lg:items-start deitado:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] deitado:items-start deitado:gap-3 deitado:p-2">
-      <div className="flex min-w-0 flex-col gap-4 deitado:gap-2">
+    <main className="mx-auto grid w-full max-w-[100rem] flex-1 gap-4 p-3 sm:p-5 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] lg:grid-rows-[minmax(0,1fr)] deitado:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] deitado:items-start deitado:gap-3 deitado:p-2">
+      <div className="flex min-w-0 flex-col gap-4 lg:min-h-0 lg:overflow-y-auto deitado:gap-2">
         {ponto.alvo && (
           <div
             role="status"
@@ -148,14 +171,16 @@ function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temC
             </Botao>
           </div>
         )}
-        {(ponto.erro || mudo.erro) && (
+        {(ponto.erro || mudo.erro || espelho.erro) && (
           <p role="alert" className="text-sm text-no-ar">
-            {ponto.erro ?? mudo.erro}
+            {ponto.erro ?? mudo.erro ?? espelho.erro}
           </p>
         )}
         <Previa
           cena={cena}
           urlSaida={`/stage?t=${transmissaoId}`}
+          ouvindo={ouvindo}
+          aoAlternarOuvir={aoAlternarOuvir}
           // A vinheta sai da cena quando termina (só o diretor grava a cena).
           aoTerminarVinheta={() => {
             const fim = cena.vinheta;
@@ -173,7 +198,7 @@ function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temC
           aoEscolher={(layoutId) => alterar((c) => ({ ...c, layoutId }))}
         />
       </div>
-      <div className="flex min-w-0 flex-col gap-3">
+      <div className="flex min-w-0 flex-col gap-3 lg:min-h-0">
         <div role="tablist" aria-label="Painel lateral" className="vidro flex gap-1 rounded-xl p-1">
           {(
             [
@@ -182,6 +207,7 @@ function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temC
               ["estilo", "Estilo"],
               ["banners", "Banners"],
               ["midia", "Mídia"],
+              ["audio", "Áudio"],
             ] as const
           ).map(([id, rotulo]) => (
             <button
@@ -198,49 +224,58 @@ function PainelDiretor({ transmissaoId, temChat }: { transmissaoId: string; temC
             </button>
           ))}
         </div>
-        {/* As duas abas ficam montadas: o chat continua chegando com a aba fechada. */}
-        <div hidden={abaLateral !== "pessoas"}>
-          <PainelPessoas
-            cena={cena}
-            transmissaoId={transmissaoId}
-            alterar={alterar}
-            controles={{
-              alternarMudo: (identity, valor) => void mudo.alternar(identity, valor),
-              mudoPendente: mudo.pendente,
-              ponto,
-              etiquetasOcultas: cena.etiquetasOcultas,
-              alternarEtiqueta: (identity) =>
-                alterar((c) => ({
-                  ...c,
-                  etiquetasOcultas: c.etiquetasOcultas.includes(identity)
-                    ? c.etiquetasOcultas.filter((x) => x !== identity)
-                    : [...c.etiquetasOcultas, identity],
-                })),
-              editarEtiqueta,
-            }}
-          />
+        {/* Só o conteúdo das abas rola; as abas ficam fixas no alto. */}
+        <div className="flex min-w-0 flex-col gap-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
+          {/* As abas ficam montadas: o chat continua chegando com a aba fechada. */}
+          <div hidden={abaLateral !== "pessoas"}>
+            <PainelPessoas
+              cena={cena}
+              transmissaoId={transmissaoId}
+              alterar={alterar}
+              controles={{
+                alternarMudo: (identity, valor) => void mudo.alternar(identity, valor),
+                mudoPendente: mudo.pendente,
+              // Na própria câmera, a escolha fica lembrada para a próxima entrada.
+              alternarEspelho: (identity, valor) => void espelho.alternar(identity, valor, identity === localIdentity),
+              espelhoPendente: espelho.pendente,
+                ponto,
+                etiquetasOcultas: cena.etiquetasOcultas,
+                alternarEtiqueta: (identity) =>
+                  alterar((c) => ({
+                    ...c,
+                    etiquetasOcultas: c.etiquetasOcultas.includes(identity)
+                      ? c.etiquetasOcultas.filter((x) => x !== identity)
+                      : [...c.etiquetasOcultas, identity],
+                  })),
+                editarEtiqueta,
+              }}
+            />
+          </div>
+          <section hidden={abaLateral !== "comentarios"} aria-label="Comentários" className="vidro rounded-xl p-3 sm:p-4">
+            <PainelComentarios
+              transmissaoId={transmissaoId}
+              temChat={temChat}
+              lerYoutube={abaLateral === "comentarios" || cena.status === "ao_vivo" || cena.status === "intervalo"}
+              destaque={{
+                atual: cena.comentarioDestacado,
+                mostrar: (comentario) => alterar((c) => ({ ...c, comentarioDestacado: comentario })),
+                ocultar: () => alterar((c) => ({ ...c, comentarioDestacado: null })),
+              }}
+            />
+          </section>
+          <section hidden={abaLateral !== "estilo"} aria-label="Estilo" className="vidro rounded-xl p-3 sm:p-4">
+            <PainelEstilo cena={cena} alterar={alterar} />
+          </section>
+          <section hidden={abaLateral !== "banners"} aria-label="Banners" className="vidro rounded-xl p-3 sm:p-4">
+            <PainelBanners cena={cena} alterar={alterar} />
+          </section>
+          <section hidden={abaLateral !== "midia"} aria-label="Mídia" className="vidro rounded-xl p-3 sm:p-4">
+            <PainelMidia cena={cena} alterar={alterar} />
+          </section>
+          <section hidden={abaLateral !== "audio"} aria-label="Áudio" className="vidro rounded-xl p-3 sm:p-4">
+            <PainelAudio cena={cena} alterar={alterar} ouvindo={ouvindo} />
+          </section>
         </div>
-        <section hidden={abaLateral !== "comentarios"} aria-label="Comentários" className="vidro rounded-xl p-3 sm:p-4">
-          <PainelComentarios
-            transmissaoId={transmissaoId}
-            temChat={temChat}
-            lerYoutube={abaLateral === "comentarios" || cena.status === "ao_vivo" || cena.status === "intervalo"}
-            destaque={{
-              atual: cena.comentarioDestacado,
-              mostrar: (comentario) => alterar((c) => ({ ...c, comentarioDestacado: comentario })),
-              ocultar: () => alterar((c) => ({ ...c, comentarioDestacado: null })),
-            }}
-          />
-        </section>
-        <section hidden={abaLateral !== "estilo"} aria-label="Estilo" className="vidro rounded-xl p-3 sm:p-4">
-          <PainelEstilo cena={cena} alterar={alterar} />
-        </section>
-        <section hidden={abaLateral !== "banners"} aria-label="Banners" className="vidro rounded-xl p-3 sm:p-4">
-          <PainelBanners cena={cena} alterar={alterar} />
-        </section>
-        <section hidden={abaLateral !== "midia"} aria-label="Mídia" className="vidro rounded-xl p-3 sm:p-4">
-          <PainelMidia cena={cena} alterar={alterar} />
-        </section>
       </div>
     </main>
   );
@@ -421,6 +456,24 @@ function BotaoMudoParaLive({ transmissaoId, codigo }: { transmissaoId: string; c
       onClick={() => void alternar(localParticipant.identity, !mudo)}
     >
       {mudo ? <IconeMudoLive weight="fill" /> : <SpeakerSimpleHigh weight="fill" />}
+    </BotaoBarra>
+  );
+}
+
+/** Espelhar a própria câmera: vale na tela de todos e na live. */
+function BotaoEspelhar({ transmissaoId, codigo }: { transmissaoId: string; codigo?: string }) {
+  const { localParticipant, isCameraEnabled } = useLocalParticipant();
+  const espelhado = useEspelhado(localParticipant);
+  const { alternar, pendente } = useAlternarEspelho(transmissaoId, codigo);
+  if (!isCameraEnabled) return null;
+  return (
+    <BotaoBarra
+      rotulo={espelhado ? "Espelhada" : "Espelhar"}
+      ligado={espelhado}
+      desativado={pendente !== null}
+      onClick={() => void alternar(localParticipant.identity, !espelhado, true)}
+    >
+      <FlipHorizontal weight="fill" />
     </BotaoBarra>
   );
 }

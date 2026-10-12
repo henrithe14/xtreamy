@@ -3,8 +3,16 @@ import { cookies } from "next/headers";
 import { resolverAcesso } from "@/lib/acesso";
 import { criarTokenParticipante } from "@/lib/livekit";
 import { LIMITES_IDENTIDADE } from "@/lib/preferencias";
+import { ATRIBUTO_ESPELHAR } from "@/lib/participante";
 
-type Pedido = { transmissaoId?: unknown; codigo?: unknown; nome?: unknown; etiqueta?: unknown; modoHost?: unknown };
+type Pedido = {
+  transmissaoId?: unknown;
+  codigo?: unknown;
+  nome?: unknown;
+  etiqueta?: unknown;
+  modoHost?: unknown;
+  espelhar?: unknown;
+};
 
 const texto = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
@@ -58,6 +66,7 @@ export async function POST(request: Request) {
         etiqueta,
         soDiretor: acesso.papel === "host" && pedido.modoHost === "diretor",
       },
+      atributos: pedido.espelhar === true ? { [ATRIBUTO_ESPELHAR]: "1" } : undefined,
     });
     return Response.json({ token, papel: acesso.papel, identity });
   } catch {

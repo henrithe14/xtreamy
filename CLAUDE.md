@@ -219,6 +219,7 @@ Transições suaves (fade/slide de 200–300 ms).
 - Vozes de quem está no palco (exceto `audioPrivado`) + mídia em reprodução + música de fundo + efeitos + vinhetas, tudo via Web Audio no `/stage`, que é capturado pelo Egress.
 - **Ducking:** a música de fundo baixa automaticamente quando alguém fala (ajustável).
 - O host ouve a mixagem da live num botão "Ouvir a live" da prévia (fones!), para não confundir com o áudio da sala.
+- Implementação (Etapa 11): `components/stage/AudioLive.tsx` junta vozes do palco (`AudioPalco`), música e efeitos; fica no `/stage` e no estúdio quando o diretor liga "Ouvir a live" (aí o `RoomAudioRenderer` sai, a própria voz nunca volta e a prévia toca mídias com som). Usa elementos `<audio>` (não Web Audio). **Música:** `cena.musica` = playlist em loop (`faixas` com url e duração, `inicioEm`, `pausadaEm`, `volume`, `ducking: desligado|leve|forte`); a posição sai do horário (`posicaoMusica`), e ao fim de cada faixa o `/stage` segue para a próxima sozinho. A playlist é a lista de músicas enviadas no momento do "Tocar". **Ducking:** baixa quando alguém audível no palco fala (`useSpeakingParticipants`, sem "mudo para a live", fora do intervalo) e durante vinhetas e mídias com som que não são de loop; desce em 200 ms e volta em ~1,5 s. Para quando a live é encerrada. **Efeitos:** data message no tópico `efeito` (`lib/audioLive.ts`); o `/stage` só aceita de quem tem papel host no metadata e só URLs do nosso bucket; até 4 ao mesmo tempo; volume geral guardado no navegador do diretor.
 
 ## 9. Interface
 
@@ -243,7 +244,8 @@ Identidade **Xtreamy**: sala de controle escura, profissional e sóbria, com luz
 - Login/Logout no topo.
 
 ### 9.2 Entrar no Estúdio (pré-entrada, host e convidado)
-- Prévia da **câmera** (com espelhamento só local) e opção **entrar só com voz**.
+- Prévia da **câmera** e opção **entrar só com voz**.
+- **Espelhar câmera** (desligado por padrão): vale na própria tela **e na live**, para a prévia mostrar exatamente o que vai ao ar. Implementação: atributo `espelhar` do participante, gravado só pelo servidor (no token, pela escolha da pré-entrada, e depois em `POST /api/participante`: diretor em qualquer pessoa, convidado só em si). No estúdio: botão "Espelhar" na barra e no cartão de cada pessoa (diretor).
 - **Controle de som:** escolha do alto-falante + botão "testar som".
 - **Controle de microfone:** escolha do microfone + medidor de nível.
 - **Configurações:** câmera, resolução, cancelamento de ruído/eco.
@@ -377,7 +379,9 @@ Etapas implementadas e publicadas, mas cujo critério de "Pronto" ainda não foi
 - **Etapa 8 (inteira):** chat do YouTube no painel (aba Comentários), "Mostrar na tela"/"Ocultar" (o cartão aparece na prévia e na live), chat interno entre diretor e convidados, e destacar mensagem interna. Critério: **um comentário real aparece no layout da live**.
 - **Etapa 9 (inteira):** cores da marca, 4 temas, fontes, borda/formato da câmera, esconder/editar etiqueta, banners (faixa e letreiro), estilos e banners salvos. **Antes, rodar o SQL `20261011000004_banners_estilos.sql`** (sem ele, só as listas salvas ficam indisponíveis). Critério: trocar o tema muda etiquetas e banners **na live**; conferir também se a fonte escolhida aparece na gravação (o Egress precisa baixá-la antes de começar).
 - **Etapa 10 (inteira):** **antes, rodar o SQL `20261011000005_ativos.sql`** (cria o bucket e a tabela). Enviar logo, overlay, fundo (imagem e vídeo), mídias por momento e vinheta; usar cada um na live. Critério: **vídeo "Volto logo" com som toca na live** durante o Intervalo. Conferir também se vídeos grandes travam a saída (recomendar 1080p ou menos).
-- Etapa 11 em diante: listar aqui o que for publicado sem teste.
+- **Etapa 11 (inteira):** enviar músicas e efeitos (aba Áudio), tocar a playlist, pausar/continuar/próxima/parar, volume, os 3 níveis de ducking (a música baixa quando alguém no palco fala e **não** baixa por quem está no bastidor ou "mudo para a live"), efeito toca **uma vez** na live, "Ouvir a live" na prévia (com fones). Critério: **na gravação do YouTube, a música baixa quando alguém fala e o efeito toca uma vez.** Conferir também se a primeira música começa no Egress sem clique.
+- **Espelhar câmera:** ligar na pré-entrada e pela barra/cartão no estúdio; a prévia, o cartão e a **live** espelham juntos; recarregar mantém a escolha.
+- Etapa 12 em diante: listar aqui o que for publicado sem teste.
 
 ## 13. Cuidados técnicos conhecidos
 

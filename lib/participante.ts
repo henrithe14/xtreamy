@@ -36,3 +36,6 @@ export function ehPonto(identity: string) {
 
 /** Atributo "mudo para a live": a equipe ouve, o /stage não toca. */
 export const ATRIBUTO_AUDIO_PRIVADO = "audioPrivado";
+
+/** Atributo "câmera espelhada": vale na própria tela e na live (o que se vê é o que vai ao ar). */
+export const ATRIBUTO_ESPELHAR = "espelhar";

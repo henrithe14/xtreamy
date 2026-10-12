@@ -157,7 +157,7 @@ export function PainelMidia({ cena, alterar }: { cena: Cena; alterar: Alterar })
   );
 }
 
-function Secao({ titulo, dica, children }: { titulo: string; dica?: string; children: React.ReactNode }) {
+export function Secao({ titulo, dica, children }: { titulo: string; dica?: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-2.5">
       <div>
@@ -191,7 +191,7 @@ function CorDeFundo({ cena, alterar }: { cena: Cena; alterar: Alterar }) {
   );
 }
 
-function Envio({ tipo, rotulo, aoEnviar }: { tipo: TipoAtivo; rotulo: string; aoEnviar: () => void }) {
+export function Envio({ tipo, rotulo, aoEnviar }: { tipo: TipoAtivo; rotulo: string; aoEnviar: () => void }) {
   const { enviar, enviando, erro } = useEnvioAtivo(aoEnviar);
   return (
     <div className="flex flex-col gap-1">

@@ -31,6 +31,53 @@ export type Fundo = { tipo: "cor"; valor: string } | { tipo: "imagem" | "video";
 export type Midia = { url: string; video: boolean; loop: boolean; inicioEm: number };
 export type Vinheta = { url: string; inicioEm: number };
 
+/** Faixa da música de fundo. A duração (s) vem do envio e permite saber onde a playlist está. */
+export type FaixaMusica = { url: string; duracao: number };
+/** Quanto a música baixa quando alguém fala na live. */
+export type NivelDucking = "desligado" | "leve" | "forte";
+export const NIVEIS_DUCKING: NivelDucking[] = ["desligado", "leve", "forte"];
+/** Fração do volume que sobra enquanto alguém fala. */
+export const FATOR_DUCKING: Record<NivelDucking, number> = { desligado: 1, leve: 0.4, forte: 0.15 };
+export const MAX_FAIXAS = 30;
+
+/**
+ * Música de fundo (Etapa 11): playlist em loop. inicioEm é quando a primeira faixa teria
+ * começado; assim o /stage sabe a faixa e o ponto certos, mesmo se recarregar.
+ */
+export type Musica = {
+  faixas: FaixaMusica[];
+  inicioEm: number;
+  /** Pausada: posição (ms desde inicioEm) congelada. null = tocando. */
+  pausadaEm: number | null;
+  /** 0–1 */
+  volume: number;
+  ducking: NivelDucking;
+};
+
+/** Faixa e segundo em que a playlist está agora. */
+export function posicaoMusica(m: Musica, agora: number): { indice: number; offsetSeg: number } {
+  const total = m.faixas.reduce((s, f) => s + f.duracao, 0);
+  const decorrido = (m.pausadaEm ?? agora - m.inicioEm) / 1000;
+  let t = ((decorrido % total) + total) % total;
+  for (let i = 0; i < m.faixas.length; i++) {
+    if (t < m.faixas[i].duracao) return { indice: i, offsetSeg: t };
+    t -= m.faixas[i].duracao;
+  }
+  return { indice: 0, offsetSeg: 0 };
+}
+
+/** Põe a playlist numa faixa e segundo, mantendo pausada se estava pausada. */
+export function posicionarMusica(
+  m: Omit<Musica, "faixas" | "inicioEm">,
+  faixas: FaixaMusica[],
+  indice: number,
+  offsetSeg: number,
+  agora: number,
+): Musica {
+  const decorrido = (faixas.slice(0, indice).reduce((s, f) => s + f.duracao, 0) + offsetSeg) * 1000;
+  return { ...m, faixas, inicioEm: agora - decorrido, pausadaEm: m.pausadaEm === null ? null : decorrido };
+}
+
 export type Cena = {
   /** Cresce a cada alteração; serve para descartar respostas antigas. */
   versao: number;
@@ -52,6 +99,7 @@ export type Cena = {
   fundo: Fundo | null;
   midia: Midia | null;
   vinheta: Vinheta | null;
+  musica: Musica | null;
 };
 
 export const CENA_INICIAL: Cena = {
@@ -70,6 +118,7 @@ export const CENA_INICIAL: Cena = {
   fundo: null,
   midia: null,
   vinheta: null,
+  musica: null,
 };
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -144,7 +193,27 @@ function validarAtivos(c: Record<string, unknown>) {
     vinheta = { url, inicioEm };
   }
 
-  return { logo, overlay, fundo, midia, vinheta };
+  let musica: Musica | null = null;
+  if (c.musica != null) {
+    const m = c.musica as Partial<Musica>;
+    if (!Array.isArray(m.faixas) || m.faixas.length === 0 || m.faixas.length > MAX_FAIXAS) return invalido;
+    const faixas: FaixaMusica[] = [];
+    for (const bruta of m.faixas as Partial<FaixaMusica>[]) {
+      const url = urlDeAtivo(bruta?.url);
+      const duracao = bruta?.duracao;
+      if (!url || typeof duracao !== "number" || !(duracao > 0 && duracao <= 4 * 3600)) return invalido;
+      faixas.push({ url, duracao });
+    }
+    const inicioEm = tempo(m.inicioEm);
+    const pausadaEm = m.pausadaEm ?? null;
+    if (inicioEm === null) return invalido;
+    if (pausadaEm !== null && !(typeof pausadaEm === "number" && Number.isFinite(pausadaEm) && pausadaEm >= 0)) return invalido;
+    if (typeof m.volume !== "number" || !(m.volume >= 0 && m.volume <= 1)) return invalido;
+    if (!NIVEIS_DUCKING.includes(m.ducking as NivelDucking)) return invalido;
+    musica = { faixas, inicioEm, pausadaEm, volume: m.volume, ducking: m.ducking as NivelDucking };
+  }
+
+  return { logo, overlay, fundo, midia, vinheta, musica };
 }
 
 export const MAX_NO_PALCO = 10;

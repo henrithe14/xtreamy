@@ -11,8 +11,8 @@ import {
   type TrackReference,
 } from "@livekit/components-react";
 import { Track, type Participant } from "livekit-client";
-import { ArrowLineUp, Eye, EyeSlash, Headset, MicrophoneSlash, PencilSimple, SpeakerSimpleSlash, Star, UserMinus } from "@phosphor-icons/react";
-import { useMudoParaLive } from "@/hooks/useAudioPrivado";
+import { ArrowLineUp, Eye, EyeSlash, FlipHorizontal, Headset, MicrophoneSlash, PencilSimple, SpeakerSimpleSlash, Star, UserMinus } from "@phosphor-icons/react";
+import { useEspelhado, useMudoParaLive } from "@/hooks/useAudioPrivado";
 import type { ControlePonto } from "@/hooks/usePonto";
 import type { Cena } from "@/lib/cena";
 import { obterLayout } from "@/lib/layouts";
@@ -24,6 +24,9 @@ import { CartaoSoVoz } from "@/components/ui/CartaoSoVoz";
 export type ControlesPessoa = {
   alternarMudo: (identity: string, mudo: boolean) => void;
   mudoPendente: string | null;
+  /** Câmera espelhada (na tela e na live). */
+  alternarEspelho: (identity: string, espelhar: boolean) => void;
+  espelhoPendente: string | null;
   ponto: ControlePonto;
   /** Identities com o nome escondido na live. */
   etiquetasOcultas: string[];
@@ -57,7 +60,7 @@ export function PainelPessoas({ cena, transmissaoId, alterar, controles }: Props
   return (
     <section
       aria-label="Pessoas"
-      className="vidro flex flex-col gap-5 rounded-xl p-3 sm:p-4 deitado:max-h-[calc(100dvh-7.5rem)] deitado:overflow-y-auto lg:max-h-[calc(100dvh-10rem)] lg:overflow-y-auto"
+      className="vidro flex flex-col gap-5 rounded-xl p-3 sm:p-4 deitado:max-h-[calc(100dvh-7.5rem)] deitado:overflow-y-auto"
     >
       <Grupo titulo="No palco" contagem={palco.length} vazio="Ninguém no palco ainda.">
         {palco.map((id, i) => {
@@ -159,6 +162,7 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
   const nome = name || "Participante";
   const local = participante.isLocal;
   const mudoParaLive = useMudoParaLive(participante);
+  const espelhado = useEspelhado(participante);
   const { ponto } = controles;
   const pontoNestaPessoa = ponto.alvo === identity;
   const etiquetaOculta = identity ? controles.etiquetasOcultas.includes(identity) : false;
@@ -173,7 +177,8 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
         }`}
       >
         {comVideo ? (
-          <VideoTrack trackRef={camera} className={`size-full object-cover ${local ? "-scale-x-100" : ""}`} />
+          // Igual à live: espelhado só se a pessoa (ou o diretor) escolheu espelhar.
+          <VideoTrack trackRef={camera} className={`size-full object-cover ${espelhado ? "-scale-x-100" : ""}`} />
         ) : (
           <CartaoSoVoz nome={nome} falando={false} className="absolute inset-0" />
         )}
@@ -268,6 +273,16 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
         >
           <SpeakerSimpleSlash weight="fill" />
         </BotaoAcao>
+        {comVideo && (
+          <BotaoAcao
+            onClick={() => identity && controles.alternarEspelho(identity, !espelhado)}
+            ativo={espelhado}
+            desativado={controles.espelhoPendente === identity}
+            rotulo={espelhado ? "Desespelhar a câmera (também na live)" : "Espelhar a câmera (também na live)"}
+          >
+            <FlipHorizontal weight="fill" />
+          </BotaoAcao>
+        )}
         {!local && identity && (
           <BotaoAcao
             onClick={() => void (pontoNestaPessoa ? ponto.desligar() : ponto.falarCom(identity))}

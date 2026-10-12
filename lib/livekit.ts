@@ -25,18 +25,21 @@ type DadosToken = {
   identity: string;
   nome: string;
   metadados: MetadadosParticipante;
+  /** Atributos iniciais (ex.: câmera espelhada), que só o servidor grava. */
+  atributos?: Record<string, string>;
 };
 
 /**
  * Token de entrada na sala. Expira rápido (só vale para conectar; depois o LiveKit
  * renova a sessão sozinho). Nome e etiqueta vão em name/metadata, nunca na identity.
  */
-export async function criarTokenParticipante({ transmissaoId, identity, nome, metadados }: DadosToken) {
+export async function criarTokenParticipante({ transmissaoId, identity, nome, metadados, atributos }: DadosToken) {
   const { apiKey, apiSecret } = lerEnvLivekit();
   const token = new AccessToken(apiKey, apiSecret, {
     identity,
     name: nome,
     metadata: JSON.stringify(metadados),
+    attributes: atributos,
     ttl: "10m",
   });
   token.addGrant({

@@ -98,6 +98,7 @@ function Conteudo({ transmissaoId, codigo, titulo, papel, preferencias, atualiza
           nome={preferencias.nome.trim()}
           etiqueta={preferencias.etiqueta.trim()}
           falando={nivel > 0.25}
+          espelhar={preferencias.espelhar}
         />
         {erro && (
           <AvisoErro
@@ -224,6 +225,15 @@ function Conteudo({ transmissaoId, codigo, titulo, papel, preferencias, atualiza
                 </option>
               ))}
             </Selecao>
+            {!semCam && (
+              <Interruptor
+                id="espelhar"
+                rotulo="Espelhar câmera"
+                dica="Vale também para a live: textos na imagem aparecem invertidos. A prévia mostra como vai ao ar."
+                ligado={preferencias.espelhar}
+                aoMudar={(v) => atualizar("espelhar", v)}
+              />
+            )}
             <Interruptor
               id="eco"
               rotulo="Cancelamento de eco"
