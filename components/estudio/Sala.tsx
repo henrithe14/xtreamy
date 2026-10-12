@@ -27,6 +27,7 @@ import {
   SpeakerSimpleSlash as IconeMudoLive,
   UserFocus,
   FlipHorizontal,
+  Monitor,
 } from "@phosphor-icons/react";
 import { useAlternarEspelho, useAlternarMudoParaLive, useEspelhado, useMudoParaLive } from "@/hooks/useAudioPrivado";
 import { usePonto } from "@/hooks/usePonto";
@@ -47,6 +48,7 @@ import { PainelBanners } from "@/components/estudio/PainelBanners";
 import { PainelMidia } from "@/components/estudio/PainelMidia";
 import { PainelAudio } from "@/components/estudio/PainelAudio";
 import { AudioLive } from "@/components/stage/AudioLive";
+import { TelasCompartilhadas } from "@/components/estudio/TelasCompartilhadas";
 import { ControlesLive, Cronometro } from "@/components/estudio/ControlesLive";
 import { StatusTally } from "@/components/ui/StatusTally";
 
@@ -118,6 +120,7 @@ export function Sala({
         {!soDiretor && <AlternarMidia fonte={Track.Source.Camera} />}
         {!soDiretor && <BotaoMudoParaLive transmissaoId={transmissaoId} codigo={codigo} />}
         {!soDiretor && <BotaoEspelhar transmissaoId={transmissaoId} codigo={codigo} />}
+        <BotaoApresentar />
         {souHost && urlConvite && <BotaoConvidar transmissaoId={transmissaoId} urlInicial={urlConvite} />}
         <BotaoBarra rotulo="Sair" perigo onClick={aoSair}>
           <SignOut weight="fill" />
@@ -192,6 +195,7 @@ function PainelDiretor({ transmissaoId, temChat, ouvindo, aoAlternarOuvir }: Pro
             {erro}
           </p>
         )}
+        <TelasCompartilhadas cena={cena} alterar={alterar} />
         <SeletorLayout
           layoutId={cena.layoutId}
           pessoasNoPalco={cena.noPalco.length}
@@ -287,6 +291,7 @@ function PainelConvidado() {
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center gap-4 p-3 sm:p-5 deitado:gap-2 deitado:p-2">
       <EstadoNoPalco cena={cena} />
+      <AvisoApresentando cena={cena} />
       <Previa cena={cena} />
       <section aria-label="Chat da equipe" className="vidro w-full max-w-2xl rounded-xl p-3 sm:p-4">
         <h2 className="mb-2 text-sm font-semibold">Chat da equipe</h2>
@@ -457,6 +462,52 @@ function BotaoMudoParaLive({ transmissaoId, codigo }: { transmissaoId: string; c
     >
       {mudo ? <IconeMudoLive weight="fill" /> : <SpeakerSimpleHigh weight="fill" />}
     </BotaoBarra>
+  );
+}
+
+/** O navegador deixa compartilhar a tela? (No celular, quase nunca.) */
+function suportaCompartilharTela() {
+  return typeof navigator !== "undefined" && typeof navigator.mediaDevices?.getDisplayMedia === "function";
+}
+
+/** Compartilhar a tela. Não vai ao ar sozinho: o diretor escolhe mostrar. */
+function BotaoApresentar() {
+  const { enabled, pending, toggle } = useTrackToggle({
+    source: Track.Source.ScreenShare,
+    // Áudio da aba quando o Chrome oferecer; "detail" mantém texto de slides nítido.
+    captureOptions: { audio: true, selfBrowserSurface: "exclude", surfaceSwitching: "include", contentHint: "detail" },
+  });
+  if (!suportaCompartilharTela()) return null;
+  return (
+    <BotaoBarra
+      rotulo={enabled ? "Parar" : "Apresentar"}
+      ligado={enabled || undefined}
+      desativado={pending}
+      // Cancelar a escolha da tela não é erro.
+      onClick={() => void Promise.resolve(toggle()).catch(() => undefined)}
+    >
+      <Monitor weight="fill" />
+    </BotaoBarra>
+  );
+}
+
+/** Convidado: avisa se a própria tela está só compartilhada ou já na live. */
+function AvisoApresentando({ cena }: { cena: Cena }) {
+  const { localParticipant, isScreenShareEnabled } = useLocalParticipant();
+  if (!isScreenShareEnabled) return null;
+  const noAr = cena.apresentacaoId === localParticipant.identity;
+  return (
+    <p
+      role="status"
+      className={`flex items-center gap-3 rounded-xl px-4 py-3 ring-1 ring-inset ${
+        noAr ? "bg-pronto/10 text-pronto ring-pronto/25" : "bg-white/[0.04] text-texto-suave ring-white/10"
+      }`}
+    >
+      <Monitor weight="fill" className="size-5 shrink-0" aria-hidden />
+      {noAr
+        ? "Sua tela está na live."
+        : "Você está compartilhando a tela. O diretor decide quando ela aparece na live."}
+    </p>
   );
 }
 

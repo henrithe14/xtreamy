@@ -209,6 +209,7 @@ type Layout = {
 - **Padrões do sistema:** solo, grade (2–10, automática), lado a lado, destaque + miniaturas, apresentação + câmeras, mídia em tela cheia.
 - **Editar / Novo:** editor visual com o canvas 16:9, arrastar e redimensionar slots, grade magnética, duplicar um padrão como ponto de partida e salvar em `layouts`.
 - Pessoas preenchem os slots `pessoa` na ordem de `noPalco`; o slot `apresentacao` recebe a tela compartilhada.
+- Implementação (Etapa 12): "Apresentar" na barra (qualquer pessoa; escondido sem `getDisplayMedia`, ex.: celular) publica a tela com o áudio da aba quando o Chrome oferecer. **Compartilhar não põe no ar:** o diretor vê "Telas compartilhadas" e clica "Mostrar na live", que grava `cena.apresentacaoId` e troca para o layout "Apresentação" se o atual não tiver lugar para a tela; "Tirar da live" volta para a grade. Se quem está no ar para de compartilhar ou sai, a tela sai da cena (por evento da sala). Layouts com `apresentacao` (slot da tela): "Apresentação" (tela + até 4 câmeras à direita) e "Só a tela" (ninguém aparece, mas quem está no palco continua sendo ouvido). Sem tela no ar, esses layouts põem as pessoas em grade. O áudio da tela só toca na live enquanto ela está no ar (`useTelaNaLive`).
 - **Tela compartilhada nunca é cortada nem esticada:** o conteúdo aparece inteiro, na proporção real da tela/janela/aba compartilhada (ex.: janela estreita fica estreita), centralizado no slot `apresentacao` (`object-contain`), com o fundo da marca nas sobras. Ao contrário das câmeras, que preenchem o slot (`object-cover`). O layout de apresentação pode ajustar o slot à proporção da faixa (`track.dimensions`) para aproveitar melhor o quadro.
 
 ### 8.4 Camadas do `/stage` (de baixo para cima)
@@ -381,7 +382,12 @@ Etapas implementadas e publicadas, mas cujo critério de "Pronto" ainda não foi
 - **Etapa 10 (inteira):** **antes, rodar o SQL `20261011000005_ativos.sql`** (cria o bucket e a tabela). Enviar logo, overlay, fundo (imagem e vídeo), mídias por momento e vinheta; usar cada um na live. Critério: **vídeo "Volto logo" com som toca na live** durante o Intervalo. Conferir também se vídeos grandes travam a saída (recomendar 1080p ou menos).
 - **Etapa 11 (inteira):** enviar músicas e efeitos (aba Áudio), tocar a playlist, pausar/continuar/próxima/parar, volume, os 3 níveis de ducking (a música baixa quando alguém no palco fala e **não** baixa por quem está no bastidor ou "mudo para a live"), efeito toca **uma vez** na live, "Ouvir a live" na prévia (com fones). Critério: **na gravação do YouTube, a música baixa quando alguém fala e o efeito toca uma vez.** Conferir também se a primeira música começa no Egress sem clique.
 - **Espelhar câmera:** ligar na pré-entrada e pela barra/cartão no estúdio; a prévia, o cartão e a **live** espelham juntos; recarregar mantém a escolha.
-- Etapa 12 em diante: listar aqui o que for publicado sem teste.
+- **Etapa 12 (inteira):** compartilhar tela no Chrome desktop (convidado e diretor), "Mostrar na live"/"Tirar da live", layouts "Apresentação" e "Só a tela", janela estreita aparece inteira e sem esticar, áudio de uma aba (vídeo do YouTube) vai para a live só com a tela no ar, parar de compartilhar tira a tela da cena, botão escondido no celular. Critério: **tela compartilhada + câmeras na live.**
+- Etapa 13 em diante: listar aqui o que for publicado sem teste.
+
+### Próximo combinado (antes da Etapa 13)
+
+**Biblioteca padrão de música e efeitos (só CC0).** Ativos do sistema (`ativos.user_id` nulo, pasta `sistema/` no bucket), que todo criador vê na aba Áudio e não pode apagar; precisa de migração SQL. Antes de baixar qualquer arquivo, apresentar ao usuário a lista com fonte, autor e licença (CC0) de cada faixa/efeito para aprovação. Nada de Pixabay/YouTube Audio Library (proíbem redistribuir) nem CC-BY.
 
 ## 13. Cuidados técnicos conhecidos
 

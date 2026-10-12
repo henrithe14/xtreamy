@@ -84,6 +84,8 @@ export type Cena = {
   layoutId: string;
   /** Identities, na ordem dos slots. */
   noPalco: string[];
+  /** Quem tem a tela compartilhada no ar (aparece em layouts de apresentação). */
+  apresentacaoId: string | null;
   status: StatusCena;
   /** Quando a live entrou no ar (ms desde 1970). Só o servidor define. */
   noArDesde: number | null;
@@ -106,6 +108,7 @@ export const CENA_INICIAL: Cena = {
   versao: 0,
   layoutId: LAYOUT_PADRAO,
   noPalco: [],
+  apresentacaoId: null,
   status: "ensaio",
   noArDesde: null,
   cores: CORES_PADRAO,
@@ -229,6 +232,8 @@ export function validarCena(dado: unknown): Cena | null {
   if (!Array.isArray(c.noPalco) || c.noPalco.length > MAX_NO_PALCO) return null;
   if (!c.noPalco.every((id) => typeof id === "string" && id.length > 0 && id.length <= 64)) return null;
   if (new Set(c.noPalco).size !== c.noPalco.length) return null;
+  const apresentacaoId = c.apresentacaoId ?? null;
+  if (apresentacaoId !== null && (typeof apresentacaoId !== "string" || !apresentacaoId || apresentacaoId.length > 64)) return null;
   if (typeof c.status !== "string" || !STATUS.includes(c.status)) return null;
   const cores = validarCores(c.cores);
   if (!cores) return null;
@@ -248,6 +253,7 @@ export function validarCena(dado: unknown): Cena | null {
     versao: c.versao,
     layoutId: c.layoutId,
     noPalco: c.noPalco,
+    apresentacaoId,
     status: c.status,
     noArDesde,
     cores,

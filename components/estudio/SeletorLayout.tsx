@@ -3,7 +3,7 @@
 import { LAYOUTS, type Layout } from "@/lib/layouts";
 
 /** Quantas pessoas desenhar na miniatura de cada layout. */
-const EXEMPLO: Record<string, number> = { solo: 1, "lado-a-lado": 2, grade: 4, destaque: 4 };
+const EXEMPLO: Record<string, number> = { solo: 1, "lado-a-lado": 2, grade: 4, destaque: 4, apresentacao: 2, "so-tela": 0 };
 
 type Props = {
   layoutId: string;
@@ -36,7 +36,9 @@ export function SeletorLayout({ layoutId, pessoasNoPalco, aoEscolher }: Props) {
 }
 
 function BotaoLayout({ layout, ativo, aoEscolher }: { layout: Layout; ativo: boolean; aoEscolher: (id: string) => void }) {
-  const slots = layout.slots(EXEMPLO[layout.id] ?? Math.min(layout.maxPessoas, 4));
+  const n = EXEMPLO[layout.id] ?? Math.min(layout.maxPessoas, 4);
+  const slots = layout.slots(n);
+  const tela = layout.apresentacao?.(n);
   return (
     <button
       type="button"
@@ -50,6 +52,18 @@ function BotaoLayout({ layout, ativo, aoEscolher }: { layout: Layout; ativo: boo
       }`}
     >
       <svg viewBox="0 0 160 90" className="w-20 rounded-sm bg-black/30 deitado:w-12" aria-hidden>
+        {/* Tela compartilhada: retângulo vazado, para diferenciar das pessoas. */}
+        {tela && (
+          <rect
+            x={(tela.x / 100) * 160 + 1.5}
+            y={(tela.y / 100) * 90 + 1.5}
+            width={(tela.w / 100) * 160 - 3}
+            height={(tela.h / 100) * 90 - 3}
+            rx="3"
+            strokeWidth="1.5"
+            className={ativo ? "fill-destaque/20 stroke-destaque" : "fill-white/5 stroke-white/40"}
+          />
+        )}
         {slots.map((s, i) => (
           <rect
             key={i}

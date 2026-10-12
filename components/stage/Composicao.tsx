@@ -16,7 +16,7 @@ import type { Cena, CoresMarca } from "@/lib/cena";
 import { urlFonte, type Estilo } from "@/lib/estilo";
 import { BannerLive, CartaoComentario, EtiquetaNome } from "@/components/stage/Artes";
 import { FundoEnviado, LogoLive, MidiaTelaCheia, OverlayLive, VinhetaLive } from "@/components/stage/Midias";
-import { obterLayout, type Slot } from "@/lib/layouts";
+import { obterLayout, slotsGrade, type Slot } from "@/lib/layouts";
 import { ATRIBUTO_AUDIO_PRIVADO, ATRIBUTO_ESPELHAR, lerMetadados } from "@/lib/participante";
 import { CartaoSoVoz } from "@/components/ui/CartaoSoVoz";
 
@@ -36,6 +36,16 @@ export function usePalcoVisivel(cena: Cena) {
   }, [participantes, cena.noPalco, cena.layoutId]);
 }
 
+/**
+ * Tela compartilhada que está no ar: escolhida pelo diretor (apresentacaoId), sendo
+ * compartilhada agora e com um layout de apresentação. Senão, undefined.
+ */
+export function useTelaNaLive(cena: Cena): TrackReference | undefined {
+  const telas = useTracks([Track.Source.ScreenShare], { onlySubscribed: false });
+  if (!cena.apresentacaoId || !obterLayout(cena.layoutId).apresentacao) return undefined;
+  return telas.find((t) => t.participant.identity === cena.apresentacaoId && !t.publication.isMuted);
+}
+
 type Props = {
   cena: Cena;
   /** Prévia no estúdio: mostra aviso quando o palco está vazio. No /stage, nada. */
@@ -49,7 +59,11 @@ type Props = {
 /** Quadro 16:9 da live. Tamanhos de texto em cqw: escala igual na prévia e em 1920×1080. */
 export function Composicao({ cena, previa = false, comSom = false, aoTerminarVinheta }: Props) {
   const palco = usePalcoVisivel(cena);
-  const slots = obterLayout(cena.layoutId).slots(palco.length);
+  const layout = obterLayout(cena.layoutId);
+  const tela = useTelaNaLive(cena);
+  // Layout de apresentação sem tela no ar: as pessoas ficam em grade.
+  const slots = layout.apresentacao && !tela ? slotsGrade(palco.length) : layout.slots(palco.length);
+  const slotTela = tela && layout.apresentacao ? layout.apresentacao(palco.length) : undefined;
   const cameras = useTracks([Track.Source.Camera], { onlySubscribed: false });
 
   return (
@@ -62,17 +76,23 @@ export function Composicao({ cena, previa = false, comSom = false, aoTerminarVin
       {/* Camadas de baixo para cima (seção 8.4). */}
       {cena.fundo ? <FundoEnviado fundo={cena.fundo} /> : <FundoMarca cores={cena.cores} />}
 
-      {palco.map((p, i) => (
-        <SlotPessoa
-          key={p.identity}
-          participante={p}
-          slot={slots[i]}
-          camera={cameras.find((c) => c.participant.identity === p.identity)}
-          estilo={cena.estilo}
-          cores={cena.cores}
-          mostrarEtiqueta={!cena.etiquetasOcultas.includes(p.identity)}
-        />
-      ))}
+      {tela && slotTela && <SlotTela tela={tela} slot={slotTela} />}
+
+      {/* "Só a tela" não tem slots de pessoa: quem está no palco só é ouvido. */}
+      {palco.map(
+        (p, i) =>
+          slots[i] && (
+            <SlotPessoa
+              key={p.identity}
+              participante={p}
+              slot={slots[i]}
+              camera={cameras.find((c) => c.participant.identity === p.identity)}
+              estilo={cena.estilo}
+              cores={cena.cores}
+              mostrarEtiqueta={!cena.etiquetasOcultas.includes(p.identity)}
+            />
+          ),
+      )}
 
       {cena.comentarioDestacado && (
         <CartaoComentario
@@ -107,7 +127,7 @@ export function Composicao({ cena, previa = false, comSom = false, aoTerminarVin
         />
       )}
 
-      {previa && palco.length === 0 && !cena.midia && cena.status !== "intervalo" && cena.status !== "encerrada" && (
+      {previa && palco.length === 0 && !tela && !cena.midia && cena.status !== "intervalo" && cena.status !== "encerrada" && (
         <p className="absolute inset-0 flex items-center justify-center text-[2.2cqw] text-texto-suave">
           Ninguém no palco. Escolha quem aparece em Pessoas.
         </p>
@@ -146,6 +166,21 @@ function TelaCheiaMarca({ cores, texto }: { cores: CoresMarca; texto: string }) 
       <p className="absolute inset-0 flex items-center justify-center text-[5cqw] font-semibold tracking-tight text-white">
         {texto}
       </p>
+    </div>
+  );
+}
+
+/**
+ * Tela compartilhada: nunca cortada nem esticada. Aparece inteira, na proporção real,
+ * centralizada no slot; o fundo da live aparece nas sobras (seção 8.3).
+ */
+function SlotTela({ tela, slot }: { tela: TrackReference; slot: Slot }) {
+  return (
+    <div
+      className="absolute transition-[left,top,width,height] duration-300 ease-out motion-reduce:transition-none"
+      style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.w}%`, height: `${slot.h}%` }}
+    >
+      <VideoTrack trackRef={tela} className="size-full object-contain" />
     </div>
   );
 }
@@ -229,10 +264,16 @@ function SlotPessoa({ participante, slot, camera, estilo, cores, mostrarEtiqueta
 export function AudioPalco({ cena }: { cena: Cena }) {
   const palco = usePalcoVisivel(cena);
   const microfones = useTracks([Track.Source.Microphone]);
+  const audiosTela = useTracks([Track.Source.ScreenShareAudio]);
+  const tela = useTelaNaLive(cena);
   const silencio = cena.status === "intervalo" || cena.status === "encerrada";
   const visiveis = new Set(silencio ? [] : palco.map((p) => p.identity));
+  // Som da aba/tela compartilhada: só enquanto a tela está no ar.
+  const audioTela =
+    tela && !silencio ? audiosTela.find((a) => a.participant.identity === tela.participant.identity && !a.participant.isLocal) : undefined;
   return (
     <>
+      {audioTela && <AudioTrack key="tela" trackRef={audioTela} />}
       {microfones
         // A própria voz nunca volta (no estúdio, com "Ouvir a live" ligado).
         .filter((m) => visiveis.has(m.participant.identity) && !m.participant.isLocal)

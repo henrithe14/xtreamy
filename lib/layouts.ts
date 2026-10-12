@@ -9,12 +9,18 @@ export type Layout = {
   maxPessoas: number;
   /** Slots para n pessoas no palco (n já limitado a maxPessoas). */
   slots: (n: number) => Slot[];
+  /**
+   * Layout de apresentação: onde fica a tela compartilhada, para n pessoas no palco.
+   * Sem tela no ar, as pessoas usam a grade.
+   */
+  apresentacao?: (n: number) => Slot;
 };
 
 const MARGEM = 1.5;
+const MAX_PALCO = 10;
 
 /** Grade automática: colunas ≈ raiz de n; a última linha incompleta fica centralizada. */
-function slotsGrade(n: number): Slot[] {
+export function slotsGrade(n: number): Slot[] {
   if (n <= 0) return [];
   if (n === 1) return [{ x: 0, y: 0, w: 100, h: 100 }];
   const colunas = Math.ceil(Math.sqrt(n));
@@ -77,9 +83,37 @@ export const LAYOUTS: Layout[] = [
       ];
     },
   },
+  {
+    id: "apresentacao",
+    nome: "Apresentação",
+    maxPessoas: 4,
+    // Tela grande à esquerda; câmeras 16:9 empilhadas à direita, centralizadas.
+    apresentacao: (n) => (n === 0 ? { x: 0, y: 0, w: 100, h: 100 } : { x: MARGEM, y: 2, w: 76, h: 96 }),
+    slots: (n) => {
+      const x = 76 + MARGEM * 2;
+      const w = 100 - x - MARGEM;
+      const h = w; // em % do quadro: largura e altura iguais em % dão 16:9 em pixels
+      const total = n * h + (n - 1) * MARGEM;
+      const topo = (100 - total) / 2;
+      return Array.from({ length: n }, (_, i) => ({ x, y: topo + i * (h + MARGEM), w, h }));
+    },
+  },
+  {
+    id: "so-tela",
+    nome: "Só a tela",
+    // Ninguém aparece, mas quem está no palco continua sendo ouvido (quem apresenta fala).
+    maxPessoas: MAX_PALCO,
+    apresentacao: () => ({ x: 0, y: 0, w: 100, h: 100 }),
+    slots: () => [],
+  },
 ];
 
 export const LAYOUT_PADRAO = "grade";
+/** Layout escolhido ao mostrar uma tela quando o atual não tem lugar para ela. */
+export const LAYOUT_APRESENTACAO = "apresentacao";
+
+/** O layout mostra pessoas? ("Só a tela" não: quem está no palco só é ouvido.) */
+export const mostraPessoas = (layout: Layout) => layout.slots(1).length > 0;
 
 export function obterLayout(id: string): Layout {
   return LAYOUTS.find((l) => l.id === id) ?? LAYOUTS.find((l) => l.id === LAYOUT_PADRAO)!;
