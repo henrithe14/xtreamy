@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { LiveKitRoom, useAudioPlayback, useConnectionState, useRoomContext } from "@livekit/components-react";
 import EgressHelper from "@livekit/egress-sdk";
@@ -8,6 +8,7 @@ import { ConnectionState, type RoomOptions } from "livekit-client";
 import { useCena } from "@/hooks/useCena";
 import { Composicao } from "@/components/stage/Composicao";
 import { AudioLive } from "@/components/stage/AudioLive";
+import { Gravador } from "@/components/stage/Gravador";
 
 type Conexao = { url: string; token: string } | { erro: string } | null;
 
@@ -50,6 +51,8 @@ export function PaginaStage() {
 
   // A saída quer sempre a melhor qualidade de quem está no palco.
   const modoEgress = Boolean(urlEgress && tokenEgress);
+  // Janela de gravação aberta pelo diretor (grava esta aba no computador dele).
+  const gravar = !modoEgress && params.get("gravar") === "1";
   const opcoes = useMemo<RoomOptions>(() => ({ adaptiveStream: false, dynacast: false }), []);
 
   if (!conexao) return <Tela>Conectando…</Tela>;
@@ -57,14 +60,16 @@ export function PaginaStage() {
 
   return (
     <LiveKitRoom serverUrl={conexao.url} token={conexao.token} connect audio={false} video={false} options={opcoes}>
-      <Saida egress={modoEgress} />
+      <Saida egress={modoEgress} gravar={gravar} />
     </LiveKitRoom>
   );
 }
 
-function Saida({ egress }: { egress: boolean }) {
+function Saida({ egress, gravar }: { egress: boolean; gravar: boolean }) {
   const cena = useCena();
   const room = useRoomContext();
+  const quadro = useRef<HTMLDivElement>(null);
+  const { startAudio } = useAudioPlayback(room);
   const conexao = useConnectionState();
 
   // No Egress: avisa que a página está pronta para gravar, já conectada e com a cena
@@ -79,12 +84,13 @@ function Saida({ egress }: { egress: boolean }) {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black">
       {/* Ocupa a tela inteira em 1920×1080 (Egress) e encaixa em 16:9 numa aba comum. */}
-      <div className="w-[min(100vw,calc(100vh*16/9))]">
+      <div ref={quadro} className="w-[min(100vw,calc(100vh*16/9))]">
         <Composicao cena={cena} comSom />
       </div>
       <AudioLive cena={cena} />
       {/* Nunca mostrar botão na imagem que vai ao ar. */}
-      {!egress && <LiberarSom />}
+      {!egress && !gravar && <LiberarSom />}
+      {gravar && <Gravador alvo={quadro} aoComecar={() => void startAudio()} />}
     </div>
   );
 }

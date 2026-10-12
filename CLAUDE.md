@@ -196,6 +196,9 @@ Implementação (Etapa 7): o atributo `audioPrivado` (participant **attributes**
 - Durante o desenvolvimento, testar sempre com transmissões **não listadas**.
 - Implementação (Etapa 6): `POST /api/live/{iniciar|intervalo|retomar|encerrar}` (só host). Iniciar: busca o RTMP no YouTube (`enderecoRtmp`, nunca salvo), `startRoomCompositeEgress` com `customBaseUrl = APP_BASE_URL/stage` em `H264_1080P_30`, espera `streamStatus = active` (até ~75 s) e faz `transition → live`; se falhar, **para o Egress** (custo). Intervalo/Retomar só mudam `cena.status` (o `/stage` mostra "Já voltamos" e `AudioPalco` silencia todos). Encerrar: para o Egress e faz `transition → complete`. `status` e `noArDesde` da cena são **só do servidor** (`alterarCenaNoServidor`; `/api/cena` preserva esses campos). O `/stage` em modo Egress (`?url&token`) chama `EgressHelper.setRoom` + `startRecording` ao conectar e nunca mostra botões.
 
+### 8.2.1 Gravar (local, no navegador do diretor)
+- **Decisão:** sem armazenamento na nuvem. O botão "Gravar" (menu de cima, só diretor, com ou sem live) abre `/stage?t=&gravar=1` numa janela 16:9; lá, "Começar gravação" pede onde salvar (Chrome: `showSaveFilePicker`, grava direto no disco, bom para horas) e captura a própria aba com o som da live (`getDisplayMedia` + `preferCurrentTab`, recortada no quadro com `CropTarget` quando há suporte), com `MediaRecorder` (MP4 se o navegador suportar, senão WebM, 8 Mb/s). O painel some enquanto grava (tudo na aba entra no vídeo). O estúdio mostra "Gravando 00:00:00" e para por `postMessage`; "Parar de compartilhar" do navegador também encerra. Sem o seletor de arquivo, junta na memória e oferece "Baixar vídeo" ao final. Lógica em `hooks/useGravacao.ts`.
+
 ### 8.3 Layouts ("Disposições")
 Um layout é um JSON com **slots em porcentagem** do canvas, o que facilita criar e editar:
 
@@ -385,6 +388,7 @@ Etapas implementadas e publicadas, mas cujo critério de "Pronto" ainda não foi
 - **Etapa 11 (inteira):** enviar músicas e efeitos (aba Áudio), tocar a playlist, pausar/continuar/próxima/parar, volume, os 3 níveis de ducking (a música baixa quando alguém no palco fala e **não** baixa por quem está no bastidor ou "mudo para a live"), efeito toca **uma vez** na live, "Ouvir a live" na prévia (com fones). Critério: **na gravação do YouTube, a música baixa quando alguém fala e o efeito toca uma vez.** Conferir também se a primeira música começa no Egress sem clique.
 - **Espelhar câmera:** ligar na pré-entrada e pela barra/cartão no estúdio; a prévia, o cartão e a **live** espelham juntos; recarregar mantém a escolha.
 - **Etapa 12 (inteira):** compartilhar tela no Chrome desktop (convidado e diretor), "Mostrar na live"/"Tirar da live", layouts "Apresentação" e "Só a tela", janela estreita aparece inteira e sem esticar, áudio de uma aba (vídeo do YouTube) vai para a live só com a tela no ar, parar de compartilhar tira a tela da cena, botão escondido no celular. Critério: **tela compartilhada + câmeras na live.**
+- **Gravar:** abrir pelo estúdio, escolher arquivo e "esta aba" com áudio, gravar 5 min com música e vozes, parar pelo estúdio, conferir o MP4/WebM (imagem só do quadro, som da live); testar também sem live e numa gravação longa (30 min+).
 - Etapa 13 em diante: listar aqui o que for publicado sem teste.
 
 ### Próximo combinado (antes da Etapa 13)

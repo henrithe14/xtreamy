@@ -49,6 +49,7 @@ import { PainelMidia } from "@/components/estudio/PainelMidia";
 import { PainelAudio } from "@/components/estudio/PainelAudio";
 import { AudioLive } from "@/components/stage/AudioLive";
 import { TelasCompartilhadas } from "@/components/estudio/TelasCompartilhadas";
+import { BotaoGravar } from "@/components/estudio/BotaoGravar";
 import { ControlesLive, Cronometro } from "@/components/estudio/ControlesLive";
 import { StatusTally } from "@/components/ui/StatusTally";
 
@@ -349,6 +350,7 @@ function BarraSuperior({ titulo, papel, soDiretor, transmissaoId, temCanal }: Pr
         )}
       </div>
       {papel === "host" && <BotaoModoDiretor transmissaoId={transmissaoId} soDiretor={soDiretor} />}
+      {papel === "host" && <BotaoGravar transmissaoId={transmissaoId} />}
       {papel === "host" && <ControlesLive transmissaoId={transmissaoId} cena={cena} temCanal={temCanal} />}
       {reconectando && (
         <p role="status" className="flex items-center gap-2 rounded-full bg-ensaio/15 px-3 py-1 text-sm font-semibold text-ensaio">
