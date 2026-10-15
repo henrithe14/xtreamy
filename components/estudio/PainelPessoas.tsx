@@ -20,6 +20,7 @@ import { obterLayout } from "@/lib/layouts";
 import { ATRIBUTO_DIRETOR, ehPonto, lerMetadados } from "@/lib/participante";
 import { removerParticipante } from "@/lib/acoes/sala";
 import { CartaoSoVoz } from "@/components/ui/CartaoSoVoz";
+import { BotaoRecado } from "@/components/estudio/Recados";
 
 /** Ações do diretor que valem para qualquer pessoa: mudo para a live e ponto. */
 export type ControlesPessoa = {
@@ -216,7 +217,8 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
           </span>
         )}
         {!local && identity && (
-          <div className="absolute top-1 right-1">
+          <div className="absolute top-1 right-1 flex items-center gap-1">
+            <BotaoRecado participante={participante} />
             <BotaoRemover transmissaoId={transmissaoId} codigo={controles.codigo} identity={identity} nome={nome} />
           </div>
         )}

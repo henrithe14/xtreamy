@@ -5,6 +5,7 @@ import { ArrowSquareOut, ArrowsIn, ArrowsOut, Headphones } from "@phosphor-icons
 import type { Cena } from "@/lib/cena";
 import { Composicao } from "@/components/stage/Composicao";
 import { StatusTally } from "@/components/ui/StatusTally";
+import { BotaoRecado } from "@/components/estudio/Recados";
 
 type Props = {
   cena: Cena;
@@ -92,7 +93,13 @@ export function Previa({ cena, urlSaida, aoTerminarVinheta, ouvindo = false, aoA
         </div>
       </div>
       <div className="relative overflow-hidden rounded-xl ring-1 ring-white/10">
-        <Composicao cena={cena} previa comSom={ouvindo} aoTerminarVinheta={aoTerminarVinheta} />
+        <Composicao
+          cena={cena}
+          previa
+          comSom={ouvindo}
+          aoTerminarVinheta={aoTerminarVinheta}
+          acaoPessoa={(p) => <BotaoRecado participante={p} />}
+        />
         <MarcasDeCanto />
       </div>
       {ouvindo && (

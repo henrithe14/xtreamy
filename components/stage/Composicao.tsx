@@ -72,6 +72,8 @@ type Props = {
   comSom?: boolean;
   /** Chamado quando a vinheta acaba (o diretor tira a vinheta da cena). */
   aoTerminarVinheta?: () => void;
+  /** Só na prévia: botão em cima da câmera de cada pessoa (ex.: recado). Nunca na live. */
+  acaoPessoa?: (participante: Participant) => React.ReactNode;
 };
 
 /** Por quanto tempo a tela "Transmissão encerrada" aparece antes de voltar ao estúdio normal. */
@@ -95,7 +97,7 @@ function useMostrandoEncerramento(cena: Cena): boolean {
 }
 
 /** Quadro 16:9 da live. Tamanhos de texto em cqw: escala igual na prévia e em 1920×1080. */
-export function Composicao({ cena, previa = false, comSom = false, aoTerminarVinheta }: Props) {
+export function Composicao({ cena, previa = false, comSom = false, aoTerminarVinheta, acaoPessoa }: Props) {
   const palco = usePalcoVisivel(cena);
   const layout = obterLayout(cena.layoutId);
   const tela = useTelaNaLive(cena);
@@ -130,6 +132,7 @@ export function Composicao({ cena, previa = false, comSom = false, aoTerminarVin
               cores={cena.cores}
               mostrarEtiqueta={!cena.etiquetasOcultas.includes(p.identity)}
               previa={previa}
+              acao={previa ? acaoPessoa?.(p) : undefined}
             />
           ),
       )}
@@ -246,9 +249,10 @@ type PropsSlot = {
   mostrarEtiqueta: boolean;
   /** Prévia do estúdio: mostra o estado da pessoa ao lado do nome (nunca na live). */
   previa: boolean;
+  acao?: React.ReactNode;
 };
 
-function SlotPessoa({ participante, slot, camera, estilo, cores, mostrarEtiqueta, previa }: PropsSlot) {
+function SlotPessoa({ participante, slot, camera, estilo, cores, mostrarEtiqueta, previa, acao }: PropsSlot) {
   const { name, metadata } = useParticipantInfo({ participant: participante });
   const { etiqueta } = lerMetadados(metadata);
   const falando = useIsSpeaking(participante);
@@ -295,6 +299,7 @@ function SlotPessoa({ participante, slot, camera, estilo, cores, mostrarEtiqueta
           {previa && <EstadoNaPrevia participante={participante} comVideo={comVideo} />}
         </div>
       )}
+      {acao && <div className="absolute top-[4%] right-[3%] z-10">{acao}</div>}
     </div>
   );
 }

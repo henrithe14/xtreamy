@@ -141,3 +141,20 @@
     animation: none;
   }
 }
+
+/* Barra do recado recebido: encolhe até o recado sair (a duração vem do componente). */
+@keyframes recado-tempo {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@utility recado-tempo {
+  animation-name: recado-tempo;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}

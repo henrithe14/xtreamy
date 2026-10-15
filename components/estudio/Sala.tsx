@@ -49,10 +49,10 @@ import { PainelBanners } from "@/components/estudio/PainelBanners";
 import { PainelMidia } from "@/components/estudio/PainelMidia";
 import { PainelAudio } from "@/components/estudio/PainelAudio";
 import { AudioLive, TrilhaNaSala } from "@/components/stage/AudioLive";
-import { PainelTeleprompter } from "@/components/estudio/PainelTeleprompter";
-import { TeleprompterRecebido } from "@/components/estudio/Teleprompter";
+import { BotaoRecadoBarra, ProvedorRecados } from "@/components/estudio/Recados";
 import { TelasCompartilhadas } from "@/components/estudio/TelasCompartilhadas";
 import { BotaoGravar } from "@/components/estudio/BotaoGravar";
+import { AtalhoEfeitos } from "@/components/estudio/AtalhoEfeitos";
 import { ControlesLive, Cronometro } from "@/components/estudio/ControlesLive";
 import { StatusTally } from "@/components/ui/StatusTally";
 
@@ -102,61 +102,61 @@ export function Sala({
 
   return (
     // Diretor no desktop: a página não rola; a prévia fica fixa e só a lateral rola.
-    <div className={`flex min-h-dvh flex-col ${dirige ? "lg:h-dvh lg:overflow-hidden" : ""}`}>
-      <BarraSuperior
-        titulo={titulo}
-        papel={papel}
-        delegado={delegado}
-        codigo={codigo}
-        soDiretor={soDiretor}
-        transmissaoId={transmissaoId}
-        temCanal={temCanal}
-      />
-      <AvisoSom />
-      {falhaAparelho && <AvisoAparelho falha={falhaAparelho} aoFechar={aoFecharAvisoAparelho} />}
-
-      {!souHost && <AvisoPontoRecebido />}
-
-      {dirige ? (
-        <PainelDiretor
+    <ProvedorRecados>
+      <div className={`flex min-h-dvh flex-col ${dirige ? "lg:h-dvh lg:overflow-hidden" : ""}`}>
+        <BarraSuperior
+          titulo={titulo}
+          papel={papel}
+          delegado={delegado}
+          codigo={codigo}
+          soDiretor={soDiretor}
           transmissaoId={transmissaoId}
-          codigo={delegado ? codigo : undefined}
-          temChat={temChat}
-          ouvindo={ouvindoLive}
-          aoAlternarOuvir={() => setOuvindoLive((v) => !v)}
+          temCanal={temCanal}
         />
-      ) : (
-        <PainelConvidado />
-      )}
+        <AvisoSom />
+        {falhaAparelho && <AvisoAparelho falha={falhaAparelho} aoFechar={aoFecharAvisoAparelho} />}
 
-      <nav
-        aria-label="Controles"
-        className="sticky bottom-0 z-20 flex flex-wrap items-center justify-center gap-2 border-t border-vidro-borda bg-fundo/60 px-3 py-3 backdrop-blur-xl deitado:py-1.5"
-      >
-        <AlternarMidia fonte={Track.Source.Microphone} />
-        {!soDiretor && <AlternarMidia fonte={Track.Source.Camera} />}
-        {!soDiretor && <BotaoMudoParaLive transmissaoId={transmissaoId} codigo={codigo} />}
-        {!soDiretor && <BotaoEspelhar transmissaoId={transmissaoId} codigo={codigo} />}
-        <BotaoApresentar />
-        {souHost && urlConvite && <BotaoConvidar transmissaoId={transmissaoId} urlInicial={urlConvite} />}
-        <BotaoBarra rotulo="Sair" perigo onClick={aoSair}>
-          <SignOut weight="bold" />
-        </BotaoBarra>
-      </nav>
+        {!souHost && <AvisoPontoRecebido />}
 
-      {/* Teleprompter: só na tela de quem recebeu (nunca na live). */}
-      <TeleprompterRecebido />
+        {dirige ? (
+          <PainelDiretor
+            transmissaoId={transmissaoId}
+            codigo={delegado ? codigo : undefined}
+            temChat={temChat}
+            ouvindo={ouvindoLive}
+            aoAlternarOuvir={() => setOuvindoLive((v) => !v)}
+          />
+        ) : (
+          <PainelConvidado />
+        )}
 
-      {/* A equipe se ouve e ouve a música e os efeitos da live; "Ouvir a live" troca tudo pela mixagem. */}
-      {dirige && ouvindoLive ? (
-        <AudioLive cena={cenaSala} />
-      ) : (
-        <>
-          <RoomAudioRenderer />
-          <TrilhaNaSala cena={cenaSala} />
-        </>
-      )}
-    </div>
+        <nav
+          aria-label="Controles"
+          className="sticky bottom-0 z-20 flex flex-wrap items-center justify-center gap-2 border-t border-vidro-borda bg-fundo/60 px-3 py-3 backdrop-blur-xl deitado:py-1.5"
+        >
+          <AlternarMidia fonte={Track.Source.Microphone} />
+          {!soDiretor && <AlternarMidia fonte={Track.Source.Camera} />}
+          {!soDiretor && <BotaoMudoParaLive transmissaoId={transmissaoId} codigo={codigo} />}
+          {!soDiretor && <BotaoEspelhar transmissaoId={transmissaoId} codigo={codigo} />}
+          <BotaoApresentar />
+          <BotaoRecadoBarra />
+          {souHost && urlConvite && <BotaoConvidar transmissaoId={transmissaoId} urlInicial={urlConvite} />}
+          <BotaoBarra rotulo="Sair" perigo onClick={aoSair}>
+            <SignOut weight="bold" />
+          </BotaoBarra>
+        </nav>
+
+        {/* A equipe se ouve e ouve a música e os efeitos da live; "Ouvir a live" troca tudo pela mixagem. */}
+        {dirige && ouvindoLive ? (
+          <AudioLive cena={cenaSala} />
+        ) : (
+          <>
+            <RoomAudioRenderer />
+            <TrilhaNaSala cena={cenaSala} />
+          </>
+        )}
+      </div>
+    </ProvedorRecados>
   );
 }
 
@@ -175,7 +175,7 @@ function PainelDiretor({ transmissaoId, codigo, temChat, ouvindo, aoAlternarOuvi
   const { cena, alterar, erro } = useControleCena(transmissaoId, codigo);
   const sala = useMemo(() => (codigo ? { transmissaoId, codigo } : undefined), [transmissaoId, codigo]);
   const [abaLateral, setAbaLateral] = useState<
-    "pessoas" | "comentarios" | "estilo" | "banners" | "midia" | "audio" | "roteiro"
+    "pessoas" | "comentarios" | "estilo" | "banners" | "midia" | "audio"
   >("pessoas");
 
   async function editarEtiqueta(identity: string, etiqueta: string) {
@@ -255,7 +255,6 @@ function PainelDiretor({ transmissaoId, codigo, temChat, ouvindo, aoAlternarOuvi
               ["banners", "Banners"],
               ["midia", "Mídia"],
               ["audio", "Áudio"],
-              ["roteiro", "Roteiro"],
             ] as const
           ).map(([id, rotulo]) => (
             <button
@@ -341,9 +340,6 @@ function PainelDiretor({ transmissaoId, codigo, temChat, ouvindo, aoAlternarOuvi
           <section hidden={abaLateral !== "audio"} aria-label="Áudio" className="vidro rounded-xl p-3 sm:p-4">
             <PainelAudio cena={cena} alterar={alterar} sala={sala} />
           </section>
-          <section hidden={abaLateral !== "roteiro"} aria-label="Roteiro" className="vidro rounded-xl p-3 sm:p-4">
-            <PainelTeleprompter salvos={dono} />
-          </section>
         </div>
       </div>
     </main>
@@ -400,6 +396,7 @@ type PropsBarra = {
 function BarraSuperior({ titulo, papel, delegado, codigo, soDiretor, transmissaoId, temCanal }: PropsBarra) {
   const dirige = papel === "host" || delegado;
   const codigoDelegado = delegado ? codigo : undefined;
+  const salaDelegado = useMemo(() => (codigoDelegado ? { transmissaoId, codigo: codigoDelegado } : undefined), [transmissaoId, codigoDelegado]);
   const cena = useCena();
   const estado = useConnectionState();
   const reconectando = estado === ConnectionState.Reconnecting || estado === ConnectionState.SignalReconnecting;
@@ -422,6 +419,7 @@ function BarraSuperior({ titulo, papel, delegado, codigo, soDiretor, transmissao
         )}
       </div>
       {papel === "host" && <BotaoModoDiretor transmissaoId={transmissaoId} soDiretor={soDiretor} />}
+      {dirige && <AtalhoEfeitos sala={salaDelegado} />}
       {dirige && <BotaoGravar transmissaoId={transmissaoId} codigo={codigoDelegado} />}
       {dirige && <ControlesLive transmissaoId={transmissaoId} codigo={codigoDelegado} cena={cena} temCanal={temCanal} />}
       {reconectando && (

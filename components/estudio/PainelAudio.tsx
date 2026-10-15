@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useRoomContext } from "@livekit/components-react";
 import { MusicNotes, Pause, Play, SkipForward, SpeakerHigh, Stop, Trash } from "@phosphor-icons/react";
 import { excluirAtivo, listarAtivos, type Ativo } from "@/lib/acoes/ativos";
-import { codificarEfeito, efeitoTocando, lerDuracaoUrl, ouvirEfeitos, tocarEfeito, TOPICO_EFEITO, versaoDosEfeitos } from "@/lib/audioLive";
+import { efeitoTocando, lerDuracaoUrl, ouvirEfeitos, versaoDosEfeitos } from "@/lib/audioLive";
+import { CHAVE_VOLUME_EFEITOS, lerVolumeEfeitos, useDispararEfeito } from "@/hooks/useEfeitos";
 import {
   posicaoMusica,
   posicionarMusica,
@@ -29,8 +29,6 @@ const DUCKING: { id: NivelDucking; nome: string }[] = [
   { id: "leve", nome: "Leve" },
   { id: "forte", nome: "Forte" },
 ];
-
-const CHAVE_VOLUME_EFEITOS = "estudio:volume-efeitos";
 
 /** Aba Áudio do diretor: música de fundo (playlist) e efeitos sonoros. */
 type PropsAudio = { cena: Cena; alterar: Alterar; sala?: { transmissaoId: string; codigo: string } };
@@ -253,17 +251,14 @@ function SecaoMusica({ cena, alterar, musicas, aoEnviar, aoExcluir, podeEnviar }
 type PropsEfeitos = { efeitos: Ativo[]; aoEnviar: () => void; aoExcluir: (a: Ativo) => void; podeEnviar: boolean };
 
 function SecaoEfeitos({ efeitos, aoEnviar, aoExcluir, podeEnviar }: PropsEfeitos) {
-  const room = useRoomContext();
+  const dispararEfeito = useDispararEfeito();
   const [volume, setVolume] = useState(0.8);
   const [erro, setErro] = useState<string>();
 
   useEffect(() => {
-    try {
-      const salvo = Number(localStorage.getItem(CHAVE_VOLUME_EFEITOS));
-      // Preferência lida só no cliente, uma vez.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (localStorage.getItem(CHAVE_VOLUME_EFEITOS) !== null && salvo >= 0 && salvo <= 1) setVolume(salvo);
-    } catch {}
+    // Preferência lida só no cliente, uma vez.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setVolume(lerVolumeEfeitos());
   }, []);
 
   function mudarVolume(v: number) {
@@ -278,13 +273,9 @@ function SecaoEfeitos({ efeitos, aoEnviar, aoExcluir, podeEnviar }: PropsEfeitos
 
   async function disparar(a: Ativo) {
     setErro(undefined);
-    // Clicar de novo enquanto toca corta o efeito (na live e no estúdio).
-    const acao: "tocar" | "parar" = efeitoTocando(a.url) ? "parar" : "tocar";
-    const pedido = { url: a.url, volume, acao };
     try {
-      // Vai para todos (a live e a equipe). Quem não dirige ignora.
-      await room.localParticipant.publishData(codificarEfeito(pedido), { reliable: true, topic: TOPICO_EFEITO });
-      tocarEfeito(pedido); // a própria mensagem não volta para quem envia
+      // Clicar de novo enquanto toca corta o efeito (na live e no estúdio).
+      await dispararEfeito(a.url, volume);
     } catch {
       setErro("Não foi possível tocar o efeito. Verifique a conexão.");
     }
