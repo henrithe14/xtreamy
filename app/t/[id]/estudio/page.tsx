@@ -38,12 +38,15 @@ async function Acesso({ params, searchParams }: Pick<PageProps<"/t/[id]/estudio"
   let convite: string | undefined;
   let temCanal = false;
   let temChat = false;
+  // Id do vídeo da live (público): o painel mostra o chat do próprio YouTube, sem gastar cota.
+  let videoYoutube: string | undefined;
   if (acesso.papel === "host") {
     const transmissao = await obterTransmissaoDoUsuario(id);
     if (transmissao) {
       convite = urlConvite(transmissao);
       temCanal = Boolean(transmissao.youtube_broadcast_id && transmissao.youtube_stream_id);
       temChat = Boolean(transmissao.live_chat_id);
+      videoYoutube = transmissao.youtube_broadcast_id ?? undefined;
     }
   } else {
     // O convidado pode receber a direção durante a sessão: só os sinais (nada secreto).
@@ -54,6 +57,7 @@ async function Acesso({ params, searchParams }: Pick<PageProps<"/t/[id]/estudio"
       .maybeSingle();
     temCanal = Boolean(data?.youtube_broadcast_id && data.youtube_stream_id);
     temChat = Boolean(data?.live_chat_id);
+    videoYoutube = data?.youtube_broadcast_id ?? undefined;
   }
 
   return (
@@ -65,6 +69,7 @@ async function Acesso({ params, searchParams }: Pick<PageProps<"/t/[id]/estudio"
       urlConvite={convite}
       temCanal={temCanal}
       temChat={temChat}
+      videoYoutube={videoYoutube}
     />
   );
 }

@@ -70,6 +70,8 @@ type Props = {
   temCanal: boolean;
   /** A live no YouTube tem chat (o diretor lê e destaca comentários). */
   temChat: boolean;
+  /** Id do vídeo da live no YouTube (chat incorporado). */
+  videoYoutube?: string;
   falhaAparelho?: MediaDeviceFailure;
   /** Microfone só transmite quando a pessoa fala. */
   portaoRuido: boolean;
@@ -86,6 +88,7 @@ export function Sala({
   soDiretor: soDiretorInicial,
   temCanal,
   temChat,
+  videoYoutube,
   falhaAparelho,
   portaoRuido,
   aoFecharAvisoAparelho,
@@ -128,6 +131,7 @@ export function Sala({
             transmissaoId={transmissaoId}
             codigo={delegado ? codigo : undefined}
             temChat={temChat}
+            videoYoutube={videoYoutube}
             ouvindo={ouvindoLive}
             aoAlternarOuvir={() => setOuvindoLive((v) => !v)}
           />
@@ -171,11 +175,12 @@ type PropsDiretor = {
   /** Só para o diretor delegado: o servidor confere a direção pelo convite. */
   codigo?: string;
   temChat: boolean;
+  videoYoutube?: string;
   ouvindo: boolean;
   aoAlternarOuvir: () => void;
 };
 
-function PainelDiretor({ transmissaoId, codigo, temChat, ouvindo, aoAlternarOuvir }: PropsDiretor) {
+function PainelDiretor({ transmissaoId, codigo, temChat, videoYoutube, ouvindo, aoAlternarOuvir }: PropsDiretor) {
   const dono = !codigo;
   const { cena, alterar, erro } = useControleCena(transmissaoId, codigo);
   const sala = useMemo(() => (codigo ? { transmissaoId, codigo } : undefined), [transmissaoId, codigo]);
@@ -327,7 +332,7 @@ function PainelDiretor({ transmissaoId, codigo, temChat, ouvindo, aoAlternarOuvi
               transmissaoId={transmissaoId}
               codigo={codigo}
               temChat={temChat}
-              lerYoutube={abaLateral === "comentarios" || cena.status === "ao_vivo" || cena.status === "intervalo"}
+              videoYoutube={videoYoutube}
               destaque={{
                 atual: cena.comentarioDestacado,
                 mostrar: (comentario) => alterar((c) => ({ ...c, comentarioDestacado: comentario })),

@@ -20,6 +20,7 @@ type Props = {
   urlConvite?: string;
   temCanal: boolean;
   temChat: boolean;
+  videoYoutube?: string;
 };
 
 type Conexao = { estado: "buscando" } | { estado: "pronta"; token: string } | { estado: "erro"; mensagem: string };

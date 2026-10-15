@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useChat } from "@livekit/components-react";
-import { ChatCircleText, Eye, EyeSlash, PaperPlaneRight, YoutubeLogo } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, ChatCircleText, Eye, EyeSlash, PaperPlaneRight, Plus, Star, YoutubeLogo } from "@phosphor-icons/react";
 import { useChatYoutube } from "@/hooks/useChatYoutube";
 import { LIMITES_COMENTARIO, type ComentarioDestacado } from "@/lib/cena";
 import { ehPonto } from "@/lib/participante";
@@ -22,12 +22,15 @@ type PropsPainel = {
   /** Diretor delegado: o servidor confere a direção pelo convite. */
   codigo?: string;
   temChat: boolean;
-  /** Ler o chat do YouTube agora (live acontecendo ou aba aberta): economiza a cota diária. */
-  lerYoutube: boolean;
+  /** Id do vídeo da live: o chat do próprio YouTube aparece incorporado (não gasta cota). */
+  videoYoutube?: string;
   destaque: Destaque;
 };
 
-export function PainelComentarios({ transmissaoId, codigo, temChat, lerYoutube, destaque }: PropsPainel) {
+/** Quanto tempo a "Inserção" lê o chat pela API antes de voltar ao chat incorporado. */
+const INSERCAO_MS = 3 * 60_000;
+
+export function PainelComentarios({ transmissaoId, codigo, temChat, videoYoutube, destaque }: PropsPainel) {
   const [aba, setAba] = useState<"youtube" | "estudio">(temChat ? "youtube" : "estudio");
 
   return (
@@ -56,7 +59,7 @@ export function PainelComentarios({ transmissaoId, codigo, temChat, lerYoutube, 
 
       {aba === "youtube" ? (
         temChat ? (
-          <ChatYoutube transmissaoId={transmissaoId} codigo={codigo} ativo={lerYoutube} destaque={destaque} />
+          <ComentariosYoutube transmissaoId={transmissaoId} codigo={codigo} videoYoutube={videoYoutube} destaque={destaque} />
         ) : (
           <p className="text-sm text-texto-suave">Esta transmissão não tem canal do YouTube, então não há chat público.</p>
         )
@@ -92,6 +95,113 @@ function useRolarParaFim(dependencia: number) {
     if (el.scrollHeight - el.scrollTop - el.clientHeight < 120) el.scrollTop = el.scrollHeight;
   }, [dependencia]);
   return ref;
+}
+
+/**
+ * Chat do YouTube sem gastar a cota da API: o normal é o chat do próprio YouTube,
+ * incorporado. "Inserção" liga a leitura pela API por alguns minutos, para escolher
+ * comentários e mostrar na tela; depois volta sozinho ao chat incorporado.
+ */
+function ComentariosYoutube({
+  transmissaoId,
+  codigo,
+  videoYoutube,
+  destaque,
+}: {
+  transmissaoId: string;
+  codigo?: string;
+  videoYoutube?: string;
+  destaque: Destaque;
+}) {
+  const [insercaoAte, setInsercaoAte] = useState<number | null>(null);
+  const [agora, setAgora] = useState(() => Date.now());
+  const [dominio, setDominio] = useState<string>();
+
+  useEffect(() => {
+    // O YouTube exige o domínio da página que incorpora o chat.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDominio(window.location.hostname);
+  }, []);
+
+  useEffect(() => {
+    if (insercaoAte === null) return;
+    const t = window.setInterval(() => {
+      const instante = Date.now();
+      setAgora(instante);
+      if (instante >= insercaoAte) setInsercaoAte(null);
+    }, 1000);
+    return () => window.clearInterval(t);
+  }, [insercaoAte]);
+
+  const lendo = insercaoAte !== null || !videoYoutube;
+  const falta = insercaoAte !== null ? Math.max(0, insercaoAte - agora) : 0;
+  const minutos = Math.floor(falta / 60_000);
+  const segundos = Math.floor((falta % 60_000) / 1000);
+
+  return (
+    <div className="flex min-h-0 flex-col gap-2">
+      {insercaoAte !== null ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-md bg-destaque/10 px-2.5 py-2 text-xs ring-1 ring-destaque/30 ring-inset">
+          <Star weight="bold" className="size-4 text-destaque" aria-hidden />
+          <span className="flex-1">
+            Inserção: escolha um comentário para a tela. Volta ao chat do YouTube em{" "}
+            <span className="font-semibold tabular-nums">
+              {minutos}:{String(segundos).padStart(2, "0")}
+            </span>
+            .
+          </span>
+          <button
+            type="button"
+            onClick={() => setInsercaoAte((ate) => (ate ?? Date.now()) + 2 * 60_000)}
+            className="inline-flex items-center gap-1 rounded px-2 py-1 font-semibold hover:bg-white/10"
+          >
+            <Plus weight="bold" className="size-3.5" aria-hidden />2 min
+          </button>
+          {videoYoutube && (
+            <button
+              type="button"
+              onClick={() => setInsercaoAte(null)}
+              className="inline-flex items-center gap-1 rounded px-2 py-1 font-semibold hover:bg-white/10"
+            >
+              <ArrowCounterClockwise weight="bold" className="size-3.5" aria-hidden />
+              Voltar
+            </button>
+          )}
+        </div>
+      ) : (
+        videoYoutube && (
+          <button
+            type="button"
+            onClick={() => {
+              setAgora(Date.now());
+              setInsercaoAte(Date.now() + INSERCAO_MS);
+            }}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-destaque px-3 text-sm font-semibold text-destaque-texto hover:brightness-110"
+          >
+            <Star weight="bold" className="size-4" aria-hidden />
+            Inserção: escolher comentário para a tela
+          </button>
+        )
+      )}
+      {lendo ? (
+        <ChatYoutube transmissaoId={transmissaoId} codigo={codigo} ativo destaque={destaque} />
+      ) : (
+        <>
+          {dominio && (
+            <iframe
+              title="Chat ao vivo do YouTube"
+              src={`https://www.youtube.com/live_chat?v=${encodeURIComponent(videoYoutube)}&embed_domain=${encodeURIComponent(dominio)}&dark_theme=1`}
+              className="h-[min(60dvh,32rem)] w-full rounded-md bg-black/20"
+            />
+          )}
+          <p className="text-xs text-texto-suave">
+            Este é o chat do próprio YouTube (não gasta a cota da API). Ele só aparece com a live no ar ou agendada como
+            pública ou não listada.
+          </p>
+        </>
+      )}
+    </div>
+  );
 }
 
 type PropsChat = { transmissaoId: string; codigo?: string; ativo: boolean; destaque: Destaque };
