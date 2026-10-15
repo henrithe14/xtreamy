@@ -5,7 +5,7 @@ import { useDataChannel, useSpeakingParticipants } from "@livekit/components-rea
 import { FATOR_DUCKING, posicaoMusica, type Cena, type Musica } from "@/lib/cena";
 import { lerEfeito, tentarTocar, tocarEfeito, TOPICO_EFEITO } from "@/lib/audioLive";
 import { ATRIBUTO_AUDIO_PRIVADO, ATRIBUTO_DIRETOR, lerMetadados } from "@/lib/participante";
-import { AudioPalco, usePalcoVisivel, type SaidaLocal } from "@/components/stage/Composicao";
+import { AudioPalco, usePalcoOuvido, type SaidaLocal } from "@/components/stage/Composicao";
 import { conectarElemento, origemMix } from "@/lib/mixGravacao";
 
 /**
@@ -45,7 +45,7 @@ export function TrilhaNaSala({ cena }: { cena: Cena }) {
  * "mudo para a live"), e também durante vinhetas e mídias com som que não são de loop.
  */
 function useAbaixarMusica(cena: Cena): boolean {
-  const palco = usePalcoVisivel(cena);
+  const palco = usePalcoOuvido(cena);
   const falando = useSpeakingParticipants();
   const vozesNoAr = cena.status !== "intervalo" && cena.status !== "encerrada";
   const ids = new Set(palco.map((p) => p.identity));

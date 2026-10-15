@@ -24,10 +24,12 @@ import { CartaoSoVoz } from "@/components/ui/CartaoSoVoz";
 import { MicrophoneSlash, SpeakerSimpleSlash, VideoCameraSlash } from "@phosphor-icons/react";
 
 /**
- * Quem aparece de fato: está em noPalco, está na sala, não é "só diretor" e cabe no
- * layout. Essa lista decide o vídeo E o áudio da live (garantia do bastidor).
+ * Palco de fato: está em noPalco, está na sala e não é "só diretor".
+ * - `visiveis`: aparecem no vídeo (sem câmera oculta e cabendo no layout).
+ * - `ouvidos`: vão para o áudio da live (os visíveis + quem está com a câmera oculta).
+ * Quem não está em nenhuma das listas não é visto nem ouvido (garantia do bastidor).
  */
-export function usePalcoVisivel(cena: Cena) {
+function usePalco(cena: Cena) {
   const participantes = useParticipants();
   return useMemo(() => {
     const porIdentity = new Map(participantes.map((p) => [p.identity, p]));
@@ -35,8 +37,21 @@ export function usePalcoVisivel(cena: Cena) {
       .map((id) => porIdentity.get(id))
       .filter((p) => p !== undefined)
       .filter((p) => !lerMetadados(p.metadata).soDiretor);
-    return presentes.slice(0, obterLayout(cena.layoutId).maxPessoas);
-  }, [participantes, cena.noPalco, cena.layoutId]);
+    const ocultos = new Set(cena.camerasOcultas);
+    const visiveis = presentes.filter((p) => !ocultos.has(p.identity)).slice(0, obterLayout(cena.layoutId).maxPessoas);
+    const ouvidos = [...visiveis, ...presentes.filter((p) => ocultos.has(p.identity))];
+    return { visiveis, ouvidos };
+  }, [participantes, cena.noPalco, cena.layoutId, cena.camerasOcultas]);
+}
+
+/** Quem aparece no vídeo da live, na ordem dos slots. */
+export function usePalcoVisivel(cena: Cena) {
+  return usePalco(cena).visiveis;
+}
+
+/** Quem é ouvido na live (inclui "câmera oculta"; o "mudo para a live" é tratado na faixa). */
+export function usePalcoOuvido(cena: Cena) {
+  return usePalco(cena).ouvidos;
 }
 
 /**
@@ -326,7 +341,7 @@ function EstadoNaPrevia({ participante, comVideo }: { participante: Participant;
 export type SaidaLocal = "tudo" | "sem-diretor" | "nada";
 
 export function AudioPalco({ cena, saida = "tudo" }: { cena: Cena; saida?: SaidaLocal }) {
-  const palco = usePalcoVisivel(cena);
+  const palco = usePalcoOuvido(cena);
   const microfones = useTracks([Track.Source.Microphone]);
   const audiosTela = useTracks([Track.Source.ScreenShareAudio]);
   const tela = useTelaNaLive(cena);

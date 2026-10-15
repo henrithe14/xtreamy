@@ -304,6 +304,14 @@ function PainelDiretor({ transmissaoId, codigo, temChat, ouvindo, aoAlternarOuvi
                       ? c.etiquetasOcultas.filter((x) => x !== identity)
                       : [...c.etiquetasOcultas, identity],
                   })),
+                camerasOcultas: cena.camerasOcultas,
+                alternarCamera: (identity) =>
+                  alterar((c) => ({
+                    ...c,
+                    camerasOcultas: c.camerasOcultas.includes(identity)
+                      ? c.camerasOcultas.filter((x) => x !== identity)
+                      : [...c.camerasOcultas, identity],
+                  })),
                 editarEtiqueta,
               }}
             />

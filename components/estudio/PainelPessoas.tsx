@@ -12,7 +12,7 @@ import {
   type TrackReference,
 } from "@livekit/components-react";
 import { Track, type Participant } from "livekit-client";
-import { ArrowLineUp, Crown, Eye, EyeSlash, FlipHorizontal, Headset, MicrophoneSlash, PencilSimple, SpeakerSimpleSlash, Star, UserMinus } from "@phosphor-icons/react";
+import { ArrowLineUp, Crown, Eye, EyeSlash, VideoCameraSlash, FlipHorizontal, Headset, MicrophoneSlash, PencilSimple, SpeakerSimpleSlash, Star, UserMinus } from "@phosphor-icons/react";
 import { useEspelhado, useMudoParaLive } from "@/hooks/useAudioPrivado";
 import type { ControlePonto } from "@/hooks/usePonto";
 import type { Cena } from "@/lib/cena";
@@ -36,6 +36,9 @@ export type ControlesPessoa = {
   codigo?: string;
   /** Identities com o nome escondido na live. */
   etiquetasOcultas: string[];
+  /** Identities no palco com a câmera escondida (só a voz vai para a live). */
+  camerasOcultas: string[];
+  alternarCamera: (identity: string) => void;
   alternarEtiqueta: (identity: string) => void;
   editarEtiqueta: (identity: string, etiqueta: string) => Promise<void>;
 };
@@ -61,6 +64,9 @@ export function PainelPessoas({ cena, transmissaoId, alterar, controles }: Props
 
   const porNoPalco = (id: string) => alterar((c) => ({ ...c, noPalco: [...c.noPalco, id] }));
   const tirarDoPalco = (id: string) => alterar((c) => ({ ...c, noPalco: c.noPalco.filter((x) => x !== id) }));
+  // Quem está com a câmera oculta não ocupa lugar no layout.
+  const posicaoNoLayout = (id: string) =>
+    palco.filter((x) => !controles.camerasOcultas.includes(x)).indexOf(id);
   const destacar = (id: string) => alterar((c) => ({ ...c, noPalco: [id, ...c.noPalco.filter((x) => x !== id)] }));
 
   return (
@@ -89,7 +95,8 @@ export function PainelPessoas({ cena, transmissaoId, alterar, controles }: Props
               camera={camera(p)}
               transmissaoId={transmissaoId}
               controles={controles}
-              foraDaLive={i >= maxPessoas}
+              noPalco
+              foraDaLive={!controles.camerasOcultas.includes(id) && posicaoNoLayout(id) >= maxPessoas}
               acoes={
                 <>
                   {i > 0 && (
@@ -157,9 +164,11 @@ type PropsItem = {
   controles: ControlesPessoa;
   /** No palco, mas o layout atual não tem lugar para esta pessoa. */
   foraDaLive?: boolean;
+  /** Cartão do grupo No palco (só lá existe "câmera oculta na live"). */
+  noPalco?: boolean;
 };
 
-function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, foraDaLive }: PropsItem) {
+function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, foraDaLive, noPalco = false }: PropsItem) {
   const { name, identity, metadata } = useParticipantInfo({ participant: participante });
   const { etiqueta, papel, soDiretor } = lerMetadados(metadata);
   const falando = useIsSpeaking(participante);
@@ -173,6 +182,7 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
   const pontoNestaPessoa = ponto?.alvo === identity;
   const delegado = useParticipantAttribute(ATRIBUTO_DIRETOR, { participant: participante }) === "1";
   const etiquetaOculta = identity ? controles.etiquetasOcultas.includes(identity) : false;
+  const cameraOculta = noPalco && identity ? controles.camerasOcultas.includes(identity) : false;
   const [editando, setEditando] = useState(false);
   const [rascunho, setRascunho] = useState("");
 
@@ -189,10 +199,20 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
         ) : (
           <CartaoSoVoz nome={nome} falando={false} className="absolute inset-0" />
         )}
-        {mudoParaLive && (
-          <span className="absolute top-1 left-1 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[0.7rem] font-semibold text-ensaio backdrop-blur-sm">
-            <SpeakerSimpleSlash weight="bold" className="size-3.5" aria-hidden />
-            Mudo para a live
+        {(mudoParaLive || cameraOculta) && (
+          <span className="absolute top-1 left-1 flex flex-col items-start gap-1">
+            {mudoParaLive && (
+              <span className="inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[0.7rem] font-semibold text-ensaio backdrop-blur-sm">
+                <SpeakerSimpleSlash weight="bold" className="size-3.5" aria-hidden />
+                Mudo para a live
+              </span>
+            )}
+            {cameraOculta && (
+              <span className="inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[0.7rem] font-semibold text-ensaio backdrop-blur-sm">
+                <VideoCameraSlash weight="bold" className="size-3.5" aria-hidden />
+                Câmera oculta na live
+              </span>
+            )}
           </span>
         )}
         {!local && identity && (
@@ -283,6 +303,15 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
         >
           <SpeakerSimpleSlash weight="bold" />
         </BotaoAcao>
+        {noPalco && identity && (
+          <BotaoAcao
+            onClick={() => controles.alternarCamera(identity)}
+            ativo={cameraOculta}
+            rotulo={cameraOculta ? "Mostrar a câmera na live" : "Câmera oculta na live (a voz continua indo ao ar)"}
+          >
+            <VideoCameraSlash weight="bold" />
+          </BotaoAcao>
+        )}
         {comVideo && (
           <BotaoAcao
             onClick={() => identity && controles.alternarEspelho(identity, !espelhado)}

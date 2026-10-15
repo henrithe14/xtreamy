@@ -98,6 +98,8 @@ export type Cena = {
   estilo: Estilo;
   /** Identities cuja etiqueta (nome) não aparece na live. */
   etiquetasOcultas: string[];
+  /** No palco com a câmera escondida: a voz vai para a live, a imagem não (não ocupa lugar no layout). */
+  camerasOcultas: string[];
   banner: Banner | null;
   logo: Logo | null;
   overlay: string | null;
@@ -121,6 +123,7 @@ export const CENA_INICIAL: Cena = {
   comentarioDestacado: null,
   estilo: ESTILO_PADRAO,
   etiquetasOcultas: [],
+  camerasOcultas: [],
   banner: null,
   logo: null,
   overlay: null,
@@ -257,6 +260,9 @@ export function validarCena(dado: unknown): Cena | null {
   const etiquetasOcultas = c.etiquetasOcultas ?? [];
   if (!Array.isArray(etiquetasOcultas) || etiquetasOcultas.length > 20) return null;
   if (!etiquetasOcultas.every((id) => typeof id === "string" && id.length <= 64)) return null;
+  const camerasOcultas = c.camerasOcultas ?? []; // cenas antigas, sem o campo
+  if (!Array.isArray(camerasOcultas) || camerasOcultas.length > 20) return null;
+  if (!camerasOcultas.every((id) => typeof id === "string" && id.length <= 64)) return null;
   const ativos = validarAtivos(c as Record<string, unknown>);
   if (ativos === "invalido") return null;
   return {
@@ -272,6 +278,7 @@ export function validarCena(dado: unknown): Cena | null {
     comentarioDestacado,
     estilo,
     etiquetasOcultas,
+    camerasOcultas,
     banner,
     ...ativos,
   };
