@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { conectarFaixa } from "@/lib/mixGravacao";
 import {
   AudioTrack,
@@ -59,6 +59,26 @@ type Props = {
   aoTerminarVinheta?: () => void;
 };
 
+/** Por quanto tempo a tela "Transmissão encerrada" aparece antes de voltar ao estúdio normal. */
+const TELA_ENCERRADA_MS = 12_000;
+
+/**
+ * Depois de encerrar, a tela de encerramento fica só um tempo; depois a prévia volta ao
+ * normal e a equipe continua conversando (pós-live, como uma reunião que segue).
+ */
+function useMostrandoEncerramento(cena: Cena): boolean {
+  const fimDaTela = cena.status === "encerrada" && cena.encerradaEm ? cena.encerradaEm + TELA_ENCERRADA_MS : 0;
+  const [agora, setAgora] = useState(() => Date.now());
+  useEffect(() => {
+    if (!fimDaTela) return;
+    const falta = fimDaTela - Date.now();
+    if (falta <= 0) return;
+    const t = window.setTimeout(() => setAgora(Date.now()), falta + 50);
+    return () => window.clearTimeout(t);
+  }, [fimDaTela]);
+  return fimDaTela > 0 && agora < fimDaTela;
+}
+
 /** Quadro 16:9 da live. Tamanhos de texto em cqw: escala igual na prévia e em 1920×1080. */
 export function Composicao({ cena, previa = false, comSom = false, aoTerminarVinheta }: Props) {
   const palco = usePalcoVisivel(cena);
@@ -68,6 +88,7 @@ export function Composicao({ cena, previa = false, comSom = false, aoTerminarVin
   const slots = layout.apresentacao && !tela ? slotsGrade(palco.length) : layout.slots(palco.length, cena.tamanhoSolo);
   const slotTela = tela && layout.apresentacao ? layout.apresentacao(palco.length) : undefined;
   const cameras = useTracks([Track.Source.Camera], { onlySubscribed: false });
+  const encerramento = useMostrandoEncerramento(cena);
 
   return (
     <div
@@ -118,7 +139,7 @@ export function Composicao({ cena, previa = false, comSom = false, aoTerminarVin
       {cena.midia && <MidiaTelaCheia key={`${cena.midia.url}|${cena.midia.inicioEm}`} midia={cena.midia} comSom={comSom} />}
 
       {/* Intervalo sem mídia "Volto logo" enviada: tela simples da marca. */}
-      {((cena.status === "intervalo" && !cena.midia) || cena.status === "encerrada") && (
+      {((cena.status === "intervalo" && !cena.midia) || encerramento) && (
         <TelaCheiaMarca cores={cena.cores} texto={cena.status === "intervalo" ? "Já voltamos" : "Transmissão encerrada"} />
       )}
 
@@ -131,7 +152,7 @@ export function Composicao({ cena, previa = false, comSom = false, aoTerminarVin
         />
       )}
 
-      {previa && palco.length === 0 && !tela && !cena.midia && cena.status !== "intervalo" && cena.status !== "encerrada" && (
+      {previa && palco.length === 0 && !tela && !cena.midia && cena.status !== "intervalo" && !encerramento && (
         <p className="absolute inset-0 flex items-center justify-center text-[2.2cqw] text-texto-suave">
           Ninguém no palco. Escolha quem aparece em Pessoas.
         </p>

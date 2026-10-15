@@ -220,10 +220,15 @@ function PainelDiretor({ transmissaoId, codigo, temChat, ouvindo, aoAlternarOuvi
           urlSaida={`/stage?t=${transmissaoId}`}
           ouvindo={ouvindo}
           aoAlternarOuvir={aoAlternarOuvir}
-          // A vinheta sai da cena quando termina (só o diretor grava a cena).
+          // A vinheta sai da cena quando termina, com 15 s de folga: a live (Egress) começa
+          // a tocar alguns segundos depois da prévia e não pode ser cortada no fim.
           aoTerminarVinheta={() => {
             const fim = cena.vinheta;
-            if (fim) alterar((c) => ({ ...c, vinheta: c.vinheta?.inicioEm === fim.inicioEm ? null : c.vinheta }));
+            if (!fim) return;
+            window.setTimeout(
+              () => alterar((c) => ({ ...c, vinheta: c.vinheta?.inicioEm === fim.inicioEm ? null : c.vinheta })),
+              15_000,
+            );
           }}
         />
         {erro && (

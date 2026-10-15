@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   try {
     // Status e horário no ar são do servidor (Iniciar/Intervalo/Encerrar): nunca do navegador.
     const atual = await lerCenaDaSala(transmissaoId);
-    await gravarCenaNaSala(transmissaoId, { ...cena, status: atual.status, noArDesde: atual.noArDesde });
+    await gravarCenaNaSala(transmissaoId, { ...cena, status: atual.status, noArDesde: atual.noArDesde, encerradaEm: atual.encerradaEm });
     // Lembra o visual para a próxima sessão e as próximas transmissões do criador.
     await salvarVisual(direcao.donoId, cena);
     return Response.json({ ok: true });

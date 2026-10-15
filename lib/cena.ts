@@ -91,6 +91,8 @@ export type Cena = {
   status: StatusCena;
   /** Quando a live entrou no ar (ms desde 1970). Só o servidor define. */
   noArDesde: number | null;
+  /** Quando a live foi encerrada (ms). A tela "Transmissão encerrada" aparece só um tempo. Só o servidor define. */
+  encerradaEm: number | null;
   cores: CoresMarca;
   comentarioDestacado: ComentarioDestacado | null;
   estilo: Estilo;
@@ -114,6 +116,7 @@ export const CENA_INICIAL: Cena = {
   apresentacaoId: null,
   status: "ensaio",
   noArDesde: null,
+  encerradaEm: null,
   cores: CORES_PADRAO,
   comentarioDestacado: null,
   estilo: ESTILO_PADRAO,
@@ -244,6 +247,7 @@ export function validarCena(dado: unknown): Cena | null {
   const cores = validarCores(c.cores);
   if (!cores) return null;
   const noArDesde = typeof c.noArDesde === "number" && Number.isFinite(c.noArDesde) ? c.noArDesde : null;
+  const encerradaEm = typeof c.encerradaEm === "number" && Number.isFinite(c.encerradaEm) ? c.encerradaEm : null;
   const comentarioDestacado = validarComentario(c.comentarioDestacado);
   if (comentarioDestacado === "invalido") return null;
   const estilo = validarEstilo(c.estilo);
@@ -263,6 +267,7 @@ export function validarCena(dado: unknown): Cena | null {
     apresentacaoId,
     status: c.status,
     noArDesde,
+    encerradaEm,
     cores,
     comentarioDestacado,
     estilo,

@@ -8,7 +8,12 @@ import { conectarElemento, origemMix } from "@/lib/mixGravacao";
  * Leva o vídeo ao ponto certo: o tempo desde `inicioEm` (horário gravado na cena).
  * Assim a prévia e a live mostram o mesmo trecho, e quem entra depois não recomeça.
  */
-function useVideoSincronizado(inicioEm: number, loop: boolean, comSom: boolean, aoTerminar?: () => void) {
+/**
+ * `doInicio` (vinheta): toca sempre do começo, mesmo que esta tela tenha carregado
+ * atrasada (o Egress baixa o vídeo depois da prévia). Só pula se já passou da duração
+ * com folga (ex.: alguém recarregou a página muito depois).
+ */
+function useVideoSincronizado(inicioEm: number, loop: boolean, comSom: boolean, aoTerminar?: () => void, doInicio = false) {
   const ref = useRef<HTMLVideoElement>(null);
   const [terminou, setTerminou] = useState(false);
 
@@ -22,7 +27,13 @@ function useVideoSincronizado(inicioEm: number, loop: boolean, comSom: boolean, 
       const duracao = video.duration;
       if (Number.isFinite(duracao) && duracao > 0) {
         if (loop) video.currentTime = decorrido % duracao;
-        else if (decorrido >= duracao) {
+        else if (doInicio) {
+          if (decorrido >= duracao + 15) {
+            setTerminou(true);
+            return;
+          }
+          video.currentTime = 0;
+        } else if (decorrido >= duracao) {
           setTerminou(true);
           return;
         } else video.currentTime = Math.max(0, decorrido);
@@ -38,7 +49,7 @@ function useVideoSincronizado(inicioEm: number, loop: boolean, comSom: boolean, 
     if (video.readyState >= 1) posicionar();
     else video.addEventListener("loadedmetadata", posicionar, { once: true });
     return () => video.removeEventListener("loadedmetadata", posicionar);
-  }, [inicioEm, loop, comSom]);
+  }, [inicioEm, loop, comSom, doInicio]);
 
   const aoAcabar = () => {
     setTerminou(true);
@@ -102,7 +113,7 @@ export function MidiaTelaCheia({ midia, comSom }: { midia: Midia; comSom: boolea
 
 /** Vinheta: toca uma vez por cima de tudo e some ao terminar. */
 export function VinhetaLive({ vinheta, comSom, aoTerminar }: { vinheta: Vinheta; comSom: boolean; aoTerminar?: () => void }) {
-  const { ref, terminou, aoAcabar } = useVideoSincronizado(vinheta.inicioEm, false, comSom, aoTerminar);
+  const { ref, terminou, aoAcabar } = useVideoSincronizado(vinheta.inicioEm, false, comSom, aoTerminar, true);
   if (terminou) return null;
   return (
     <video ref={ref} src={vinheta.url} crossOrigin={origemMix()} playsInline preload="auto" onEnded={aoAcabar} className="absolute inset-0 size-full object-cover" />

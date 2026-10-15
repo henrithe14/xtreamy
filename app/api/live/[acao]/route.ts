@@ -41,8 +41,13 @@ export async function POST(request: Request, ctx: RouteContext<"/api/live/[acao]
     await executar(acao, t, direcao.donoId);
     return Response.json({ ok: true });
   } catch (e) {
+    const texto = e instanceof Error ? e.message : "";
     const mensagem =
-      e instanceof ErroLive || e instanceof ErroYouTube ? e.message : "Algo falhou ao falar com o YouTube ou o LiveKit.";
+      e instanceof ErroLive || e instanceof ErroYouTube
+        ? e.message
+        : /minutes exceeded|quota|limit/i.test(texto)
+          ? "Os minutos de transmissão do plano do LiveKit acabaram. Veja em cloud.livekit.io → Billing (aumentar o plano ou esperar a renovação mensal)."
+          : "Algo falhou ao falar com o YouTube ou o LiveKit.";
     console.error(`[live/${acao}]`, e instanceof Error ? e.message : e);
     return Response.json({ erro: mensagem }, { status: 409 });
   }
@@ -99,7 +104,7 @@ async function executar(acao: Acao, t: Transmissao, userId: string) {
         if (!(e instanceof ErroYouTube && e.motivo === "redundantTransition")) throw e;
       });
     }
-    await alterarCenaNoServidor(t.id, () => ({ status: "encerrada", noArDesde: null }));
+    await alterarCenaNoServidor(t.id, () => ({ status: "encerrada", noArDesde: null, encerradaEm: Date.now() }));
     await salvarStatus(t.id, "encerrada", { egress_id: null });
     return;
   }

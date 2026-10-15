@@ -50,14 +50,15 @@ export const LAYOUTS: Layout[] = [
   {
     id: "lado-a-lado",
     nome: "Lado a lado",
-    maxPessoas: 2,
+    maxPessoas: 4,
+    // Todos numa linha, mesma altura. A altura é limitada para nenhuma câmera ficar mais
+    // estreita que 3:4 (em % do quadro 16:9: h ≤ w × 16 / (9 × 0,75)); centralizado na vertical.
     slots: (n) => {
       if (n <= 1) return [{ x: 0, y: 0, w: 100, h: 100 }];
-      const w = (100 - MARGEM * 3) / 2;
-      return [
-        { x: MARGEM, y: 4, w, h: 92 },
-        { x: MARGEM * 2 + w, y: 4, w, h: 92 },
-      ];
+      const w = (100 - MARGEM * (n + 1)) / n;
+      const h = Math.min(92, (w * 16) / (9 * 0.75));
+      const y = (100 - h) / 2;
+      return Array.from({ length: n }, (_, i) => ({ x: MARGEM + i * (w + MARGEM), y, w, h }));
     },
   },
   {

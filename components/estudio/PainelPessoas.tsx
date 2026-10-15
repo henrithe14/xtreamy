@@ -273,7 +273,8 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
         </p>
         )}
       </div>
-      <div className="flex items-center gap-1">
+      {/* Quebra em mais linhas quando o cartão é estreito: nada passa da largura da câmera. */}
+      <div className="flex min-w-0 flex-wrap items-center gap-1">
         <BotaoAcao
           onClick={() => identity && controles.alternarMudo(identity, !mudoParaLive)}
           ativo={mudoParaLive}
@@ -311,7 +312,7 @@ function ItemPessoa({ participante, camera, transmissaoId, acoes, controles, for
             <Headset weight="bold" />
           </BotaoAcao>
         )}
-        <div className="flex flex-1 items-center gap-1 [&>*:last-child]:flex-1">{acoes}</div>
+        <div className="flex min-w-[6.5rem] flex-1 items-center gap-1 [&>*:last-child]:flex-1">{acoes}</div>
       </div>
     </li>
   );
@@ -336,7 +337,7 @@ function BotaoAcao({ onClick, children, rotulo, destaque, ativo, desativado }: P
       title={rotulo}
       aria-pressed={ativo}
       disabled={desativado}
-      className={`inline-flex min-h-9 items-center justify-center gap-1 rounded-md px-2.5 text-xs font-semibold transition-colors disabled:opacity-40 [&_svg]:size-4 ${
+      className={`inline-flex min-h-9 shrink-0 items-center justify-center gap-1 rounded-md px-2 text-xs font-semibold transition-colors disabled:opacity-40 [&_svg]:size-4 ${
         destaque
           ? "bg-destaque text-destaque-texto hover:bg-destaque-forte"
           : ativo
