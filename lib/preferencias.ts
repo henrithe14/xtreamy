@@ -16,6 +16,8 @@ export type Preferencias = {
   resolucao: Resolucao;
   cancelamentoEco: boolean;
   reducaoRuido: boolean;
+  /** Portão de ruído: calado, o microfone não transmite nada (como no Discord). */
+  portaoRuido: boolean;
   /** Câmera espelhada, também na live. */
   espelhar: boolean;
 };
@@ -31,6 +33,7 @@ export const PREFERENCIAS_PADRAO: Preferencias = {
   resolucao: "h720",
   cancelamentoEco: true,
   reducaoRuido: true,
+  portaoRuido: true,
   espelhar: false,
 };
 

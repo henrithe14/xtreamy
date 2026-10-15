@@ -32,6 +32,7 @@ import {
 } from "@phosphor-icons/react";
 import { useAlternarEspelho, useAlternarMudoParaLive, useEspelhado, useMudoParaLive } from "@/hooks/useAudioPrivado";
 import { usePonto } from "@/hooks/usePonto";
+import { usePortaoRuido } from "@/hooks/usePortaoRuido";
 import { ATRIBUTO_DIRETOR, ehPonto, lerMetadados } from "@/lib/participante";
 import { useCena, useControleCena } from "@/hooks/useCena";
 import type { Cena } from "@/lib/cena";
@@ -70,6 +71,8 @@ type Props = {
   /** A live no YouTube tem chat (o diretor lê e destaca comentários). */
   temChat: boolean;
   falhaAparelho?: MediaDeviceFailure;
+  /** Microfone só transmite quando a pessoa fala. */
+  portaoRuido: boolean;
   aoFecharAvisoAparelho: () => void;
   aoSair: () => void;
 };
@@ -84,9 +87,11 @@ export function Sala({
   temCanal,
   temChat,
   falhaAparelho,
+  portaoRuido,
   aoFecharAvisoAparelho,
   aoSair,
 }: Props) {
+  usePortaoRuido(portaoRuido);
   const souHost = papel === "host";
   // Diretor delegado: convidado a quem o dono passou a direção (atributo gravado pelo servidor).
   const delegado =

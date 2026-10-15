@@ -248,6 +248,13 @@ function Conteudo({ transmissaoId, codigo, titulo, papel, preferencias, atualiza
               ligado={preferencias.reducaoRuido}
               aoMudar={(v) => atualizar("reducaoRuido", v)}
             />
+            <Interruptor
+              id="portao"
+              rotulo="Só transmitir quando eu falar"
+              dica="Com o microfone aberto e você calado, nada é transmitido (nem respiração, nem barulho de fundo)."
+              ligado={preferencias.portaoRuido}
+              aoMudar={(v) => atualizar("portaoRuido", v)}
+            />
           </div>
         </details>
 

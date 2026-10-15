@@ -140,6 +140,7 @@ export function Estudio(props: Props) {
       <Sala
         {...props}
         soDiretor={papel === "host" && preferencias.modoHost === "diretor"}
+        portaoRuido={preferencias.portaoRuido}
         falhaAparelho={falhaAparelho}
         aoFecharAvisoAparelho={() => setFalhaAparelho(undefined)}
         aoSair={() => setSaida("saiu")}
