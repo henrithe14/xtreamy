@@ -3,6 +3,7 @@
 // Campos de artes, mídias, widgets etc. entram nas etapas correspondentes.
 
 import { LAYOUTS, LAYOUT_PADRAO, TAMANHO_SOLO } from "@/lib/layouts";
+import { ehPosicaoCameras, POSICAO_PADRAO, type PosicaoCameras } from "@/lib/apresentacao";
 import { ESTILO_PADRAO, validarBanner, validarEstilo, type Banner, type Estilo } from "@/lib/estilo";
 import { urlDeAtivo } from "@/lib/ativos";
 
@@ -88,6 +89,8 @@ export type Cena = {
   noPalco: string[];
   /** Quem tem a tela compartilhada no ar (aparece em layouts de apresentação). */
   apresentacaoId: string | null;
+  /** Layout Apresentação: onde ficam as câmeras em volta da tela. */
+  posicaoCameras: PosicaoCameras;
   status: StatusCena;
   /** Quando a live entrou no ar (ms desde 1970). Só o servidor define. */
   noArDesde: number | null;
@@ -114,6 +117,7 @@ export const CENA_INICIAL: Cena = {
   versao: 0,
   layoutId: LAYOUT_PADRAO,
   tamanhoSolo: TAMANHO_SOLO.padrao,
+  posicaoCameras: POSICAO_PADRAO,
   noPalco: [],
   apresentacaoId: null,
   status: "ensaio",
@@ -244,6 +248,8 @@ export function validarCena(dado: unknown): Cena | null {
   const tamanhoSolo = c.tamanhoSolo ?? TAMANHO_SOLO.padrao; // cenas antigas, sem o campo
   if (typeof tamanhoSolo !== "number" || !Number.isInteger(tamanhoSolo)) return null;
   if (tamanhoSolo < TAMANHO_SOLO.min || tamanhoSolo > TAMANHO_SOLO.max) return null;
+  const posicaoCameras = c.posicaoCameras ?? POSICAO_PADRAO; // cenas antigas, sem o campo
+  if (!ehPosicaoCameras(posicaoCameras)) return null;
   const apresentacaoId = c.apresentacaoId ?? null;
   if (apresentacaoId !== null && (typeof apresentacaoId !== "string" || !apresentacaoId || apresentacaoId.length > 64)) return null;
   if (typeof c.status !== "string" || !STATUS.includes(c.status)) return null;
@@ -269,6 +275,7 @@ export function validarCena(dado: unknown): Cena | null {
     versao: c.versao,
     layoutId: c.layoutId,
     tamanhoSolo,
+    posicaoCameras,
     noPalco: c.noPalco,
     apresentacaoId,
     status: c.status,

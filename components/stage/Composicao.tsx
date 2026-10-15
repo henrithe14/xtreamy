@@ -13,7 +13,7 @@ import {
   VideoTrack,
   type TrackReference,
 } from "@livekit/components-react";
-import { Track, type Participant } from "livekit-client";
+import { Track, TrackEvent, type Participant } from "livekit-client";
 import type { Cena, CoresMarca } from "@/lib/cena";
 import { urlFonte, type Estilo } from "@/lib/estilo";
 import { BannerLive, CartaoComentario, EtiquetaNome } from "@/components/stage/Artes";
@@ -64,6 +64,38 @@ export function useTelaNaLive(cena: Cena): TrackReference | undefined {
   return telas.find((t) => t.participant.identity === cena.apresentacaoId && !t.publication.isMuted);
 }
 
+/**
+ * Proporção (largura/altura) da tela compartilhada, acompanhando quando a pessoa troca de
+ * janela ou redimensiona. Arredondada para o layout não tremer.
+ */
+function useProporcaoTela(tela: TrackReference | undefined): number {
+  const [proporcao, setProporcao] = useState(16 / 9);
+  const faixa = tela?.publication.track;
+  useEffect(() => {
+    if (!tela) return;
+    const ler = () => {
+      // O que está sendo desenhado de fato (vídeo na página) vale mais que o anunciado.
+      const video = faixa?.attachedElements.find((e): e is HTMLVideoElement => e instanceof HTMLVideoElement && e.videoWidth > 0);
+      const config = faixa?.mediaStreamTrack.getSettings();
+      const d = video
+        ? { width: video.videoWidth, height: video.videoHeight }
+        : config?.width && config.height
+          ? { width: config.width, height: config.height }
+          : tela.publication.dimensions;
+      if (d && d.width > 0 && d.height > 0) setProporcao(Math.round((d.width / d.height) * 50) / 50);
+    };
+    ler();
+    faixa?.on(TrackEvent.VideoDimensionsChanged, ler);
+    // Nem todo navegador avisa a mudança; confere de vez em quando.
+    const t = window.setInterval(ler, 1500);
+    return () => {
+      faixa?.off(TrackEvent.VideoDimensionsChanged, ler);
+      window.clearInterval(t);
+    };
+  }, [tela, faixa]);
+  return proporcao;
+}
+
 type Props = {
   cena: Cena;
   /** Prévia no estúdio: mostra aviso quando o palco está vazio. No /stage, nada. */
@@ -101,9 +133,16 @@ export function Composicao({ cena, previa = false, comSom = false, aoTerminarVin
   const palco = usePalcoVisivel(cena);
   const layout = obterLayout(cena.layoutId);
   const tela = useTelaNaLive(cena);
-  // Layout de apresentação sem tela no ar: as pessoas ficam em grade.
-  const slots = layout.apresentacao && !tela ? slotsGrade(palco.length) : layout.slots(palco.length, cena.tamanhoSolo);
-  const slotTela = tela && layout.apresentacao ? layout.apresentacao(palco.length) : undefined;
+  const proporcaoTela = useProporcaoTela(tela);
+  // Layout de apresentação sem tela no ar: as pessoas ficam em grade. Com tela: tela e
+  // câmeras calculadas juntas, pela proporção real da tela compartilhada.
+  const disposicao = tela && layout.comTela ? layout.comTela(palco.length, proporcaoTela, cena.posicaoCameras) : undefined;
+  const slots = disposicao
+    ? disposicao.pessoas
+    : layout.apresentacao && !tela
+      ? slotsGrade(palco.length)
+      : layout.slots(palco.length, cena.tamanhoSolo);
+  const slotTela = disposicao ? disposicao.tela : tela && layout.apresentacao ? layout.apresentacao(palco.length) : undefined;
   const cameras = useTracks([Track.Source.Camera], { onlySubscribed: false });
   const encerramento = useMostrandoEncerramento(cena);
 

@@ -6,7 +6,7 @@ import { criarClienteAdmin } from "@/lib/supabase/admin";
 // cena de uma sala vazia (transmissão nova ou estúdio aberto de novo).
 // Pessoas no palco, banner, mídias, música e status nunca são guardados.
 
-const PARTES = ["layoutId", "tamanhoSolo", "cores", "estilo", "logo", "overlay", "fundo"] as const;
+const PARTES = ["layoutId", "tamanhoSolo", "posicaoCameras", "cores", "estilo", "logo", "overlay", "fundo"] as const;
 type Visual = Pick<Cena, (typeof PARTES)[number]>;
 
 function extrair(cena: Cena): Visual {

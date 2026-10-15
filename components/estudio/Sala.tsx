@@ -246,6 +246,8 @@ function PainelDiretor({ transmissaoId, codigo, temChat, ouvindo, aoAlternarOuvi
           layoutId={cena.layoutId}
           tamanhoSolo={cena.tamanhoSolo}
           aoMudarTamanhoSolo={(tamanhoSolo) => alterar((c) => ({ ...c, tamanhoSolo }))}
+            posicaoCameras={cena.posicaoCameras}
+            aoMudarPosicaoCameras={(posicaoCameras) => alterar((c) => ({ ...c, posicaoCameras }))}
           pessoasNoPalco={cena.noPalco.length}
           aoEscolher={(layoutId) => alterar((c) => ({ ...c, layoutId }))}
         />

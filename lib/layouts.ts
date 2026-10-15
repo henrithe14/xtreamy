@@ -1,6 +1,8 @@
 // Layouts ("Disposições"): slots em porcentagem do quadro 16:9 (1920×1080).
 // Pessoas preenchem os slots na ordem de `noPalco` (CLAUDE.md, seção 8.3).
 
+import { disporApresentacao, POSICAO_PADRAO, type PosicaoCameras } from "@/lib/apresentacao";
+
 export type Slot = { x: number; y: number; w: number; h: number };
 
 export type Layout = {
@@ -14,6 +16,11 @@ export type Layout = {
    * Sem tela no ar, as pessoas usam a grade.
    */
   apresentacao?: (n: number) => Slot;
+  /**
+   * Com tela no ar: tela e câmeras calculadas juntas, pela proporção real da tela
+   * (largura/altura) e pela posição escolhida para as câmeras.
+   */
+  comTela?: (n: number, proporcao: number, posicao: PosicaoCameras) => { tela: Slot; pessoas: Slot[] };
 };
 
 const MARGEM = 1.5;
@@ -91,17 +98,12 @@ export const LAYOUTS: Layout[] = [
   {
     id: "apresentacao",
     nome: "Apresentação",
-    maxPessoas: 4,
-    // Tela grande à esquerda; câmeras 16:9 empilhadas à direita, centralizadas.
-    apresentacao: (n) => (n === 0 ? { x: 0, y: 0, w: 100, h: 100 } : { x: MARGEM, y: 2, w: 76, h: 96 }),
-    slots: (n) => {
-      const x = 76 + MARGEM * 2;
-      const w = 100 - x - MARGEM;
-      const h = w; // em % do quadro: largura e altura iguais em % dão 16:9 em pixels
-      const total = n * h + (n - 1) * MARGEM;
-      const topo = (100 - total) / 2;
-      return Array.from({ length: n }, (_, i) => ({ x, y: topo + i * (h + MARGEM), w, h }));
-    },
+    maxPessoas: 6,
+    // Tela na proporção real; as câmeras (16:9) crescem ou encolhem conforme o espaço que
+    // sobra, na posição escolhida (lib/apresentacao.ts). Sem tela no ar: grade.
+    apresentacao: (n) => disporApresentacao(n, 16 / 9, POSICAO_PADRAO).tela,
+    comTela: disporApresentacao,
+    slots: (n) => disporApresentacao(n, 16 / 9, POSICAO_PADRAO).pessoas,
   },
   {
     id: "so-tela",
