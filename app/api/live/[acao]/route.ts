@@ -7,6 +7,7 @@ import type { Transmissao } from "@/lib/transmissoes";
 import { enderecoRtmp, ErroYouTube, statusStream, transicionar } from "@/lib/youtube";
 import { ehVideo, urlPublica } from "@/lib/ativos";
 import type { Midia } from "@/lib/cena";
+import { transmitePeloNavegador } from "@/lib/relay";
 
 // Iniciar espera o YouTube receber o sinal (até ~1 minuto).
 export const maxDuration = 120;
@@ -117,9 +118,15 @@ async function executar(acao: Acao, t: Transmissao, userId: string) {
   }
 
   const token = await accessTokenDoDestino(t.destino_id, userId);
-  const rtmp = await enderecoRtmp(token, t.youtube_stream_id);
-  const egressId = await iniciarEgress(t.id, rtmp);
-  await salvarStatus(t.id, "ensaio", { egress_id: egressId });
+  // Pelo navegador: a janela de transmissão do diretor já está enviando ao repetidor;
+  // aqui só esperamos o YouTube receber. Senão, o Egress do LiveKit monta e envia.
+  const navegador = transmitePeloNavegador();
+  let egressId: string | null = null;
+  if (!navegador) {
+    const rtmp = await enderecoRtmp(token, t.youtube_stream_id);
+    egressId = await iniciarEgress(t.id, rtmp);
+    await salvarStatus(t.id, "ensaio", { egress_id: egressId });
+  }
 
   try {
     // Espera o YouTube receber o vídeo antes de pôr a live no ar.
@@ -128,15 +135,23 @@ async function executar(acao: Acao, t: Transmissao, userId: string) {
       await esperar(3000);
       ativo = (await statusStream(token, t.youtube_stream_id)) === "active";
     }
-    if (!ativo) throw new ErroLive("O YouTube não recebeu o vídeo a tempo. Tente iniciar de novo.");
+    if (!ativo) {
+      throw new ErroLive(
+        navegador
+          ? "O YouTube não recebeu o vídeo. Confira se a janela de transmissão está aberta e enviando, e tente de novo."
+          : "O YouTube não recebeu o vídeo a tempo. Tente iniciar de novo.",
+      );
+    }
 
     await transicionar(token, t.youtube_broadcast_id, "live").catch((e: unknown) => {
       if (!(e instanceof ErroYouTube && e.motivo === "redundantTransition")) throw e;
     });
   } catch (e) {
     // Não deixa o Egress rodando (e cobrando) se a live não entrou no ar.
-    await pararEgress(egressId).catch(() => undefined);
-    await salvarStatus(t.id, "ensaio", { egress_id: null });
+    if (egressId) {
+      await pararEgress(egressId).catch(() => undefined);
+      await salvarStatus(t.id, "ensaio", { egress_id: null });
+    }
     throw e;
   }
 

@@ -21,6 +21,8 @@ type Props = {
   temCanal: boolean;
   temChat: boolean;
   videoYoutube?: string;
+  /** "Iniciar" usa a janela de transmissão (repetidor) em vez do Egress. */
+  peloNavegador: boolean;
 };
 
 type Conexao = { estado: "buscando" } | { estado: "pronta"; token: string } | { estado: "erro"; mensagem: string };

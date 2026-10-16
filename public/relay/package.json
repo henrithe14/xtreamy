@@ -1,0 +1,12 @@
+{
+  "name": "xtreamy-relay",
+  "private": true,
+  "type": "module",
+  "description": "Repetidor do Xtreamy: janela de transmissão (WebSocket) → ffmpeg → RTMP do YouTube.",
+  "scripts": {
+    "start": "node servidor.mjs"
+  },
+  "dependencies": {
+    "ws": "8.18.3"
+  }
+}

@@ -1,3 +1,4 @@
+import { transmitePeloNavegador } from "@/lib/relay";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { resolverAcesso } from "@/lib/acesso";
@@ -70,6 +71,7 @@ async function Acesso({ params, searchParams }: Pick<PageProps<"/t/[id]/estudio"
       temCanal={temCanal}
       temChat={temChat}
       videoYoutube={videoYoutube}
+      peloNavegador={transmitePeloNavegador()}
     />
   );
 }

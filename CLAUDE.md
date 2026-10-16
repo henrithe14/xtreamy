@@ -51,6 +51,8 @@ APP_BASE_URL=http://localhost:3000          # em produção: https://seu-dominio
 GOOGLE_CLIENT_ID=                            # OAuth do YouTube (Destino)
 GOOGLE_CLIENT_SECRET=
 TOKEN_ENCRYPTION_KEY=                        # para criptografar refresh tokens do Google no banco
+RELAY_URL=                                   # transmissão pelo navegador (8.2.2); vazio = Egress
+RELAY_SECRET=                                # gerado pelo instalar.sh do repetidor
 ```
 
 Crie também um `.env.example` com as mesmas chaves vazias e mantenha `.env.local` no `.gitignore`.
@@ -206,6 +208,12 @@ Implementação (Etapa 7): o atributo `audioPrivado` (participant **attributes**
 
 ### 8.2.1 Gravar (local, no navegador do diretor)
 - **Decisão:** sem armazenamento na nuvem. O botão "Gravar" (menu de cima, só diretor, com ou sem live) abre `/stage?t=&gravar=1` numa janela 16:9; lá, "Começar gravação" pede onde salvar (Chrome: `showSaveFilePicker`, grava direto no disco, bom para horas) e captura a própria aba com o som da live (`getDisplayMedia` + `preferCurrentTab`, recortada no quadro com `CropTarget` quando há suporte), com `MediaRecorder` (MP4 se o navegador suportar, senão WebM, 8 Mb/s). O painel some enquanto grava (tudo na aba entra no vídeo). O estúdio mostra "Gravando 00:00:00" e para por `postMessage`; "Parar de compartilhar" do navegador também encerra. Sem o seletor de arquivo, junta na memória e oferece "Baixar vídeo" ao final. Lógica em `hooks/useGravacao.ts`. **Som:** não depende de "compartilhar áudio da guia": a janela de gravação soma vozes, tela, música, efeitos e mídias por Web Audio (`lib/mixGravacao.ts`, elementos com `crossOrigin`) e grava essa mixagem; a janela fica muda (sem eco). **Eco:** a aba "Abrir saída" toca todos menos o diretor (`SaidaLocal` = "sem-diretor"); o Egress toca tudo.
+
+### 8.2.2 Transmitir pelo navegador (sem Egress, sem custo) — 2026-10-15
+- **Decisão:** a cota gratuita de Egress do LiveKit acabou e o usuário não quer pagar. Com `RELAY_URL` e `RELAY_SECRET` na Vercel, "Iniciar live" **não usa o Egress**: abre a janela `/stage?t=&transmitir=1` (popup 1280×720) no computador de quem dirige; lá, "Começar a transmissão" captura a própria aba (mesma captura e mixagem de som do Gravar) e envia pedaços WebM (MediaRecorder, 500 ms, ~4,5 Mb/s) por WebSocket ao **repetidor**, que reconverte com ffmpeg (H.264 720p30, quadro-chave 2 s, AAC) e manda por RTMP ao YouTube. Quando a janela começa a enviar, o estúdio chama `/api/live/iniciar`, que só espera o YouTube receber e faz `transition → live`. Encerrar pede à janela para parar. Sem as variáveis, volta ao Egress.
+- **Segurança:** a janela pede um bilhete em `POST /api/live/sinal` (só quem dirige): o endereço RTMP com a chave vai cifrado (AES-256-GCM, `RELAY_SECRET`, vale 5 min, `lib/relay.ts`); o navegador nunca vê a chave. O repetidor só aceita bilhete válido e destino `*.youtube.com`, no máximo 2 lives ao mesmo tempo.
+- **Robustez:** se a conexão cair, a janela reconecta sozinha com bilhete novo (o estúdio mostra "Sinal caiu, reconectando…"); janela fechada no ar mostra "Sem sinal" com "Abrir de novo"; fila de envio grande avisa internet lenta. Não funciona no celular (não captura a aba): quem inicia a live precisa de Chrome/Edge no computador, e a janela fica aberta até o fim.
+- **Repetidor:** `public/relay/` (`servidor.mjs`, `package.json`, `instalar.sh`), servido pelo próprio site para instalar com um comando numa máquina Ubuntu gratuita (Oracle Cloud Always Free): instala ffmpeg, Node e Caddy, usa `IP.sslip.io` para ter HTTPS sem domínio, gera o segredo e mostra `RELAY_URL`/`RELAY_SECRET`. Lógica em `hooks/useTransmissor.ts`, `components/stage/Transmissor.tsx` e `ControlesLive` (`useJanelaTransmissao`).
 
 ### 8.3 Layouts ("Disposições")
 Um layout é um JSON com **slots em porcentagem** do canvas, o que facilita criar e editar:
@@ -403,6 +411,7 @@ Etapas implementadas e publicadas, mas cujo critério de "Pronto" ainda não foi
 - **Diretor delegado:** passar a direção a um convidado (coroa), ele muda layout/palco, inicia intervalo/retomar, lê e destaca o chat, usa mídias e áudio do dono; tirar a direção (os controles somem e as APIs passam a negar).
 - **Cena lembrada:** rodar o SQL `20261012000003_cena_salva.sql`; mudar layout/tema/logo/fundo, sair de todos e entrar de novo (ou criar transmissão nova): o visual volta.
 - **Trilha na sala e efeitos:** a equipe ouve a música e os efeitos sem "Ouvir a live"; clicar de novo num efeito longo corta na live e no estúdio.
+- **Transmitir pelo navegador:** instalar o repetidor na Oracle, pôr `RELAY_URL`/`RELAY_SECRET` na Vercel, Iniciar → janela → Começar a transmissão → live no ar; 30 min estáveis; derrubar o Wi-Fi alguns segundos (reconecta); fechar a janela no ar (aviso + Abrir de novo); Encerrar para a janela. Conferir a qualidade e o som na gravação do YouTube.
 - Etapa 14 em diante: listar aqui o que for publicado sem teste.
 
 ### Biblioteca padrão de áudio (feita em 2026-10-12)

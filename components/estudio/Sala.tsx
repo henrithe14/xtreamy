@@ -72,6 +72,7 @@ type Props = {
   temChat: boolean;
   /** Id do vídeo da live no YouTube (chat incorporado). */
   videoYoutube?: string;
+  peloNavegador: boolean;
   falhaAparelho?: MediaDeviceFailure;
   /** Microfone só transmite quando a pessoa fala. */
   portaoRuido: boolean;
@@ -89,6 +90,7 @@ export function Sala({
   temCanal,
   temChat,
   videoYoutube,
+  peloNavegador,
   falhaAparelho,
   portaoRuido,
   aoFecharAvisoAparelho,
@@ -120,6 +122,7 @@ export function Sala({
           soDiretor={soDiretor}
           transmissaoId={transmissaoId}
           temCanal={temCanal}
+          peloNavegador={peloNavegador}
         />
         <AvisoSom />
         {falhaAparelho && <AvisoAparelho falha={falhaAparelho} aoFechar={aoFecharAvisoAparelho} />}
@@ -403,9 +406,10 @@ type PropsBarra = {
   soDiretor: boolean;
   transmissaoId: string;
   temCanal: boolean;
+  peloNavegador: boolean;
 };
 
-function BarraSuperior({ titulo, papel, delegado, codigo, soDiretor, transmissaoId, temCanal }: PropsBarra) {
+function BarraSuperior({ titulo, papel, delegado, codigo, soDiretor, transmissaoId, temCanal, peloNavegador }: PropsBarra) {
   const dirige = papel === "host" || delegado;
   const codigoDelegado = delegado ? codigo : undefined;
   const salaDelegado = useMemo(() => (codigoDelegado ? { transmissaoId, codigo: codigoDelegado } : undefined), [transmissaoId, codigoDelegado]);
@@ -433,7 +437,7 @@ function BarraSuperior({ titulo, papel, delegado, codigo, soDiretor, transmissao
       {papel === "host" && <BotaoModoDiretor transmissaoId={transmissaoId} soDiretor={soDiretor} />}
       {dirige && <AtalhoEfeitos sala={salaDelegado} />}
       {dirige && <BotaoGravar transmissaoId={transmissaoId} codigo={codigoDelegado} />}
-      {dirige && <ControlesLive transmissaoId={transmissaoId} codigo={codigoDelegado} cena={cena} temCanal={temCanal} />}
+      {dirige && <ControlesLive transmissaoId={transmissaoId} codigo={codigoDelegado} cena={cena} temCanal={temCanal} peloNavegador={peloNavegador} />}
       {reconectando && (
         <p role="status" className="flex items-center gap-2 rounded-full bg-ensaio/15 px-3 py-1 text-sm font-semibold text-ensaio">
           <span className="tally-pulso size-2 rounded-full bg-ensaio" aria-hidden />
